@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1033947108559",
+    "firebase_url": "https://borkenplayground.firebaseio.com",
+    "project_id": "borkenplayground",
+    "storage_bucket": "borkenplayground.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1033947108559:android:8ac3adf9094024b1",
+        "android_client_info": {
+          "package_name": "de.borken.playgrounds.borkenplaygrounds"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1033947108559-2jcgaipvai26f6antkq7qnbuj5rb73lq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhQQHC-pS44Ey6cnH4vq7dIxZJ_yBB9Fs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

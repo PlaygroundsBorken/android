@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Borken Playgrounds</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="access_token">
+        pk.eyJ1IjoidGJ1bmluZyIsImEiOiJjam5ieXgyMXkycmVnM2tydXNjYWZscDgyIn0.FXkwAzBLXRKBvxGRLjgAnA
+    </string>
+</resources>
