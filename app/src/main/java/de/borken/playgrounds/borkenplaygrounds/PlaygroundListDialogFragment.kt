@@ -1,6 +1,5 @@
 package de.borken.playgrounds.borkenplaygrounds
 
-import android.content.Context
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
 import android.support.v7.widget.LinearLayoutManager
@@ -9,11 +8,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import de.borken.playgrounds.borkenplaygrounds.models.Playground
+import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygrounds
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.*
-
-// TODO: Customize parameter argument names
-const val ARG_ITEM_COUNT2 = "item_count"
 
 /**
  *
@@ -24,10 +24,8 @@ const val ARG_ITEM_COUNT2 = "item_count"
  *    PlaygroundListDialogFragment.newInstance(30).show(supportFragmentManager, "dialog")
  * </pre>
  *
- * You activity (or fragment) needs to implement [PlaygroundListDialogFragment.Listener].
  */
 class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
-    private var mListener: Listener? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,26 +36,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         list.layoutManager = LinearLayoutManager(context)
-        list.adapter = PlaygroundAdapter(arguments?.getInt(ARG_ITEM_COUNT2)!!)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        val parent = parentFragment
-        if (parent != null) {
-            mListener = parent as Listener
-        } else {
-            mListener = context as Listener
-        }
-    }
-
-    override fun onDetach() {
-        mListener = null
-        super.onDetach()
-    }
-
-    interface Listener {
-        fun onPlaygroundClicked(position: Int)
+        list.adapter = PlaygroundAdapter(arguments?.getString(Playground.NAME_IDENTIFIER)!!)
     }
 
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
@@ -66,38 +45,50 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
         internal val text: TextView = itemView.text
 
         init {
-            text.setOnClickListener {
-                mListener?.let {
-                    it.onPlaygroundClicked(adapterPosition)
-                    dismiss()
-                }
-            }
+
         }
     }
 
-    private inner class PlaygroundAdapter internal constructor(private val mItemCount: Int) :
+    private inner class PlaygroundAdapter internal constructor(private val mPlaygroundName: String) :
         RecyclerView.Adapter<ViewHolder>() {
+
+        override fun getItemCount(): Int = 1
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return ViewHolder(LayoutInflater.from(parent.context), parent)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.text.text = position.toString()
-        }
+            val settings = FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build()
+            val db = FirebaseFirestore.getInstance()
+            db.firestoreSettings = settings
+            db.collection("playgrounds")
+                .whereEqualTo("id", mPlaygroundName)
+                .get()
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
 
-        override fun getItemCount(): Int {
-            return mItemCount
+                        val tryParsePlaygrounds = tryParsePlaygrounds(task.result)
+
+                        if (tryParsePlaygrounds !== null && tryParsePlaygrounds.isNotEmpty()) {
+
+                            val playground = tryParsePlaygrounds.first()
+
+                            holder.text.text = playground.name
+                        }
+                    }
+                }
         }
     }
 
     companion object {
 
-        // TODO: Customize parameters
-        fun newInstance(itemCount: Int): PlaygroundListDialogFragment =
+        fun newInstance(playgroundId: String): PlaygroundListDialogFragment =
             PlaygroundListDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putInt(ARG_ITEM_COUNT2, itemCount)
+                    putString(Playground.NAME_IDENTIFIER, playgroundId)
                 }
             }
 

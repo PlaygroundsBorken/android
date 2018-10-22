@@ -3,11 +3,17 @@ package de.borken.playgrounds.borkenplaygrounds.models
 import com.google.firebase.firestore.QuerySnapshot
 import com.mapbox.geojson.Point
 
-class Playground(val name: String, val location: Point)
+class Playground(val name: String, val location: Point) {
 
-fun tryParsePlaygrounds(result: QuerySnapshot): List<Playground> {
+    companion object {
+        val NAME_IDENTIFIER: String = "PLAYGROUND_NAME"
+    }
+}
 
-    return result.documents.mapNotNull {
+
+fun tryParsePlaygrounds(result: QuerySnapshot?): List<Playground>? {
+
+    return result?.documents?.mapNotNull {
 
         val name = it.getString("name")
         val location = it.getGeoPoint("position")

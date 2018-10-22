@@ -15,6 +15,7 @@ import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
+import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
@@ -27,11 +28,7 @@ import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygrounds
 import kotlinx.android.synthetic.main.activity_playground.*
 
 
-class PlaygroundActivity : AppCompatActivity(), PlaygroundElementListDialogFragment.Listener, PlaygroundListDialogFragment.Listener {
-
-    override fun onPlaygroundClicked(position: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+class PlaygroundActivity : AppCompatActivity(), PlaygroundElementListDialogFragment.Listener {
 
     override fun onPlaygroundElementClicked(position: Int) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -62,7 +59,7 @@ class PlaygroundActivity : AppCompatActivity(), PlaygroundElementListDialogFragm
 
             mapboxMap.setOnMarkerClickListener {
 
-                PlaygroundListDialogFragment.newInstance(30).show(supportFragmentManager, "dialog")
+                PlaygroundListDialogFragment.newInstance(it.title).show(supportFragmentManager, "dialog")
 
                 true
             }
@@ -102,14 +99,24 @@ class PlaygroundActivity : AppCompatActivity(), PlaygroundElementListDialogFragm
             .get()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    this.autocompleteLocation = tryParsePlaygrounds(task.result!!).map {
+                    this.autocompleteLocation = tryParsePlaygrounds(task.result!!)?.map {
+
+                        map?.addMarker(
+                            MarkerOptions().position(
+                                LatLng(
+                                    it.location.latitude(),
+                                    it.location.longitude()
+                                )
+                            ).title(it.name)
+                        )
+
                         CarmenFeature.builder().text(it.name)
                             .placeName(it.name)
                             .geometry(it.location)
                             .id(it.name)
                             .properties(JsonObject())
                             .build()
-                    }
+                    }.orEmpty()
                 }
             }
     }
