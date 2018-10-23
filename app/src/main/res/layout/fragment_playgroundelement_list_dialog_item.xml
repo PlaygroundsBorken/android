@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools"
-          android:id="@+id/text"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:paddingBottom="@dimen/list_item_spacing_half"
-          android:paddingLeft="@dimen/list_item_spacing"
-          android:paddingRight="@dimen/list_item_spacing"
-          android:paddingTop="@dimen/list_item_spacing_half"
-          android:textAppearance="@style/TextAppearance.AppCompat.Large"
-          android:background="?attr/selectableItemBackground"
-          tools:text="Hello"/>
+<com.mikhaellopez.circularimageview.CircularImageView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        app:civ_border_color="#EEEEEE"
+        app:civ_border_width="1dp"
+        app:civ_shadow="true"
+        app:civ_shadow_radius="10"
+        app:civ_shadow_color="#8BC34A" android:id="@+id/playgroundElement"/>

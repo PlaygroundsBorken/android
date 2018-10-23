@@ -6,4 +6,8 @@
     <string name="access_token">
         pk.eyJ1IjoidGJ1bmluZyIsImEiOiJjam5ieXgyMXkycmVnM2tydXNjYWZscDgyIn0.FXkwAzBLXRKBvxGRLjgAnA
     </string>
+
+    <string name="title_activity_splash_screen">SplashScreen</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 </resources>

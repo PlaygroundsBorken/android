@@ -8,9 +8,12 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import com.bumptech.glide.Glide
+import com.google.firebase.storage.FirebaseStorage
+import com.mikhaellopez.circularimageview.CircularImageView
+import kotlinx.android.synthetic.main.activity_splash_screen.*
 import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog.*
-import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.view.*
+import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.*
 
 // TODO: Customize parameter argument names
 const val ARG_ITEM_COUNT = "item_count"
@@ -63,14 +66,11 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
         RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playgroundelement_list_dialog_item, parent, false)) {
 
-        internal val text: TextView = itemView.text
+        internal val _playgroundElement: CircularImageView = playgroundElement
 
         init {
-            text.setOnClickListener {
-                mListener?.let {
-                    it.onPlaygroundElementClicked(adapterPosition)
-                    dismiss()
-                }
+            _playgroundElement.setOnClickListener {
+                (it as? CircularImageView)?.setBorderWidth(4.0F)
             }
         }
     }
@@ -78,12 +78,20 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
     private inner class PlaygroundElementAdapter internal constructor(private val mItemCount: Int) :
         RecyclerView.Adapter<ViewHolder>() {
 
+        internal lateinit var viewContext: Context
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            viewContext = parent.context
             return ViewHolder(LayoutInflater.from(parent.context), parent)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.text.text = position.toString()
+            //holder.text.text = position.toString()
+            val storageReference = FirebaseStorage.getInstance().reference.child("badges/slide.png")
+
+            Glide.with(viewContext)
+                .load(storageReference)
+                .into(imageView)
         }
 
         override fun getItemCount(): Int {
