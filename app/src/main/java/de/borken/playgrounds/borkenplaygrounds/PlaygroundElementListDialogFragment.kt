@@ -9,14 +9,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.bumptech.glide.Glide
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import com.mikhaellopez.circularimageview.CircularImageView
+import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
+import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygroundElements
 import kotlinx.android.synthetic.main.activity_splash_screen.*
 import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog.*
 import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.*
-
-// TODO: Customize parameter argument names
-const val ARG_ITEM_COUNT = "item_count"
 
 /**
  *
@@ -24,13 +25,14 @@ const val ARG_ITEM_COUNT = "item_count"
  *
  * You can show this modal bottom sheet from your activity like this:
  * <pre>
- *    PlaygroundElementListDialogFragment.newInstance(30).show(supportFragmentManager, "dialog")
+ *    PlaygroundElementListDialogFragment.newInstance().show(supportFragmentManager, "dialog")
  * </pre>
  *
  * You activity (or fragment) needs to implement [PlaygroundElementListDialogFragment.Listener].
  */
 class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
     private var mListener: Listener? = null
+    private var playgroundElements: List<PlaygroundElement> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,9 +41,27 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
         return inflater.inflate(R.layout.fragment_playgroundelement_list_dialog, container, false)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        val db = FirebaseFirestore.getInstance()
+        db.firestoreSettings = settings
+        db.collection("playground-elements")
+            .get()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+
+                    this.playgroundElements = tryParsePlaygroundElements(task.result).orEmpty()
+                }
+            }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         list.layoutManager = GridLayoutManager(context, 3)
-        list.adapter = PlaygroundElementAdapter(arguments?.getInt(ARG_ITEM_COUNT)!!)
+        list.adapter = PlaygroundElementAdapter(playgroundElements.size)
     }
 
     override fun onAttach(context: Context) {
@@ -66,10 +86,8 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
         RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playgroundelement_list_dialog_item, parent, false)) {
 
-        internal val _playgroundElement: CircularImageView = playgroundElement
-
         init {
-            _playgroundElement.setOnClickListener {
+            playgroundElement.setOnClickListener {
                 (it as? CircularImageView)?.setBorderWidth(4.0F)
             }
         }
@@ -86,8 +104,11 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            //holder.text.text = position.toString()
-            val storageReference = FirebaseStorage.getInstance().reference.child("badges/slide.png")
+
+            if (playgroundElements.size < position) return
+            val playgroundElement = playgroundElements[position]
+
+            val storageReference = FirebaseStorage.getInstance().reference.child("badges/" + playgroundElement.image)
 
             Glide.with(viewContext)
                 .load(storageReference)
@@ -101,11 +122,10 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
 
     companion object {
 
-        // TODO: Customize parameters
-        fun newInstance(itemCount: Int): PlaygroundElementListDialogFragment =
+        fun newInstance(): PlaygroundElementListDialogFragment =
             PlaygroundElementListDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putInt(ARG_ITEM_COUNT, itemCount)
+
                 }
             }
 

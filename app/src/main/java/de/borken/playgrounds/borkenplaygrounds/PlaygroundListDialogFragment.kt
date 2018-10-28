@@ -8,10 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
-import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygrounds
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.*
 
@@ -21,7 +18,7 @@ import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.
  *
  * You can show this modal bottom sheet from your activity like this:
  * <pre>
- *    PlaygroundListDialogFragment.newInstance(30).show(supportFragmentManager, "dialog")
+ *    PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
  * </pre>
  *
  */
@@ -36,7 +33,8 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         list.layoutManager = LinearLayoutManager(context)
-        list.adapter = PlaygroundAdapter(arguments?.getString(Playground.NAME_IDENTIFIER)!!)
+        list.adapter =
+                PlaygroundAdapter(arguments?.getSerializable(getString(R.string.PLAYGROUND_LIST_DIALOG_FRAMGENT_ARGUMENT)) as? Playground)
     }
 
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
@@ -49,7 +47,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private inner class PlaygroundAdapter internal constructor(private val mPlaygroundName: String) :
+    private inner class PlaygroundAdapter internal constructor(private val mPlayground: Playground?) :
         RecyclerView.Adapter<ViewHolder>() {
 
         override fun getItemCount(): Int = 1
@@ -59,38 +57,19 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val settings = FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
-                .build()
-            val db = FirebaseFirestore.getInstance()
-            db.firestoreSettings = settings
-            db.collection("playgrounds")
-                .whereEqualTo("id", mPlaygroundName)
-                .get()
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
 
-                        val tryParsePlaygrounds = tryParsePlaygrounds(task.result)
-
-                        if (tryParsePlaygrounds !== null && tryParsePlaygrounds.isNotEmpty()) {
-
-                            val playground = tryParsePlaygrounds.first()
-
-                            holder.text.text = playground.name
-                        }
-                    }
-                }
+            holder.text.text = mPlayground?.name
         }
     }
 
     companion object {
 
-        fun newInstance(playgroundId: String): PlaygroundListDialogFragment =
+        fun newInstance(playgroundId: Playground?): PlaygroundListDialogFragment =
+
             PlaygroundListDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putString(Playground.NAME_IDENTIFIER, playgroundId)
+                    putSerializable(getString(R.string.PLAYGROUND_LIST_DIALOG_FRAMGENT_ARGUMENT), playgroundId)
                 }
             }
-
     }
 }
