@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.mikhaellopez.circularimageview.CircularImageView
+<android.support.constraint.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
-        app:civ_border_color="#EEEEEE"
-        app:civ_border_width="1dp"
-        app:civ_shadow="true"
-        app:civ_shadow_radius="10"
-        app:civ_shadow_color="#8BC34A" android:id="@+id/playgroundElement"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:padding="8dp">
+    <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintDimensionRatio="H,1:1"
+            android:scaleType="centerCrop"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:background="@drawable/image_border"
+            android:id="@+id/playgroundElement" android:contentDescription="@string/playground_element_description"
+            android:padding="8dp" app:srcCompat="@mipmap/ic_launcher"/>
+</android.support.constraint.ConstraintLayout>

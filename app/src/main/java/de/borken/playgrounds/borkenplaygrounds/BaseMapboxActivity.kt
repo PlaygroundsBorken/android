@@ -13,6 +13,7 @@ import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
+import com.mapbox.mapboxsdk.annotations.IconFactory
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
@@ -21,6 +22,7 @@ import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
+import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygrounds
 import kotlinx.android.synthetic.main.activity_playground.*
@@ -34,6 +36,12 @@ open class BaseMapboxActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
         super.onCreate(savedInstanceState, persistentState)
+        onCreate(savedInstanceState)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_playground)
 
         Mapbox.getInstance(this, getString(R.string.access_token))
         mapView.onCreate(savedInstanceState)
@@ -66,6 +74,8 @@ open class BaseMapboxActivity : AppCompatActivity() {
 
     private fun initLocations() {
 
+
+        val bitmap = getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round)
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
@@ -77,13 +87,14 @@ open class BaseMapboxActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     this.autocompleteLocation = tryParsePlaygrounds(task.result!!)?.map {
 
+                        val icon = IconFactory.getInstance(this).fromBitmap(bitmap)
                         val addedMarker = map?.addMarker(
                             MarkerOptions().position(
                                 LatLng(
                                     it.location.latitude(),
                                     it.location.longitude()
                                 )
-                            ).title(it.name).snippet(it.description.orEmpty())
+                            ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
                         )
 
                         if (addedMarker !== null)
@@ -129,7 +140,6 @@ open class BaseMapboxActivity : AppCompatActivity() {
             map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
         }
     }
-
 
     public override fun onStart() {
         super.onStart()

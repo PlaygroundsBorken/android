@@ -1,4 +1,4 @@
-package de.borken.playgrounds.borkenplaygrounds
+package de.borken.playgrounds.borkenplaygrounds.fragments
 
 import android.content.Context
 import android.os.Bundle
@@ -8,16 +8,19 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
-import com.mikhaellopez.circularimageview.CircularImageView
+import de.borken.playgrounds.borkenplaygrounds.R
+import de.borken.playgrounds.borkenplaygrounds.dp
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygroundElements
-import kotlinx.android.synthetic.main.activity_splash_screen.*
 import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog.*
-import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.*
+import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.view.*
+import java.io.Serializable
 
 /**
  *
@@ -41,9 +44,7 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
         return inflater.inflate(R.layout.fragment_playgroundelement_list_dialog, container, false)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
+    private fun loadPlaygroundElements() {
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
@@ -55,13 +56,27 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
                 if (task.isSuccessful) {
 
                     this.playgroundElements = tryParsePlaygroundElements(task.result).orEmpty()
+                    list.adapter = PlaygroundElementAdapter(playgroundElements.size)
+                    list.layoutManager = GridLayoutManager(context, 3)
                 }
             }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        list.layoutManager = GridLayoutManager(context, 3)
-        list.adapter = PlaygroundElementAdapter(playgroundElements.size)
+
+        val playgroundList = arguments?.getSerializable("playground_element") as? List<*>
+
+        playgroundElements = playgroundList?.filter { it is PlaygroundElement }?.map {
+            it as PlaygroundElement
+        }.orEmpty()
+
+
+        if (playgroundElements.isEmpty())
+            loadPlaygroundElements()
+        else {
+            list.adapter = PlaygroundElementAdapter(playgroundElements.size)
+            list.layoutManager = GridLayoutManager(context, 3)
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -75,22 +90,42 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
     }
 
     override fun onDetach() {
+        mListener?.onSelectedPlaygroundElements(playgroundElements)
         mListener = null
         super.onDetach()
     }
 
     interface Listener {
-        fun onPlaygroundElementClicked(position: Int)
+        fun onSelectedPlaygroundElements(elements: List<PlaygroundElement>)
+    }
+
+    private fun togglePlaygroundElement(playgroundElement: PlaygroundElement, playgroundElementImageView: ImageView) {
+        var padding = 8.dp
+        var backgroundResource = R.drawable.image_border
+        if (playgroundElement.selected) {
+            padding = 16.dp
+            backgroundResource = R.drawable.image_border_selected
+        }
+
+        playgroundElementImageView.setBackgroundResource(backgroundResource)
+        playgroundElementImageView.setPadding(padding, padding, padding, padding)
     }
 
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
         RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playgroundelement_list_dialog_item, parent, false)) {
 
+        internal val playgroundElementImageView: ImageView = itemView.playgroundElement
+        internal lateinit var playgroundElement: PlaygroundElement
+
         init {
-            playgroundElement.setOnClickListener {
-                (it as? CircularImageView)?.setBorderWidth(4.0F)
+
+            playgroundElementImageView.setOnClickListener {
+                playgroundElement.selected = playgroundElement.selected.not()
+                togglePlaygroundElement(playgroundElement, it as ImageView)
             }
         }
+
+
     }
 
     private inner class PlaygroundElementAdapter internal constructor(private val mItemCount: Int) :
@@ -106,13 +141,16 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
             if (playgroundElements.size < position) return
-            val playgroundElement = playgroundElements[position]
+            val element = playgroundElements[position]
 
-            val storageReference = FirebaseStorage.getInstance().reference.child("badges/" + playgroundElement.image)
+            val storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(element.image)
 
+            holder.playgroundElement = element
+            togglePlaygroundElement(holder.playgroundElement, holder.playgroundElementImageView)
             Glide.with(viewContext)
                 .load(storageReference)
-                .into(imageView)
+                .apply(RequestOptions.circleCropTransform())
+                .into(holder.playgroundElementImageView)
         }
 
         override fun getItemCount(): Int {
@@ -122,10 +160,11 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment() {
 
     companion object {
 
-        fun newInstance(): PlaygroundElementListDialogFragment =
+        fun newInstance(selectedElements: List<PlaygroundElement>): PlaygroundElementListDialogFragment =
             PlaygroundElementListDialogFragment().apply {
                 arguments = Bundle().apply {
-
+                    //val string = getString(R.string.playground_element)
+                    putSerializable("playground_element", selectedElements as Serializable)
                 }
             }
 

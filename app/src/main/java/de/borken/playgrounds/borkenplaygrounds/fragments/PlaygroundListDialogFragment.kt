@@ -1,4 +1,4 @@
-package de.borken.playgrounds.borkenplaygrounds
+package de.borken.playgrounds.borkenplaygrounds.fragments
 
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.*
@@ -34,7 +35,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         list.layoutManager = LinearLayoutManager(context)
         list.adapter =
-                PlaygroundAdapter(arguments?.getSerializable(getString(R.string.PLAYGROUND_LIST_DIALOG_FRAMGENT_ARGUMENT)) as? Playground)
+                PlaygroundAdapter(arguments?.getSerializable("PLAYGROUND_LIST") as? Playground)
     }
 
     private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
@@ -68,7 +69,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
 
             PlaygroundListDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putSerializable(getString(R.string.PLAYGROUND_LIST_DIALOG_FRAMGENT_ARGUMENT), playgroundId)
+                    putSerializable("PLAYGROUND_LIST", playgroundId)
                 }
             }
     }

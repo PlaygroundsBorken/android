@@ -2,22 +2,33 @@ package de.borken.playgrounds.borkenplaygrounds
 
 import android.graphics.Color
 import android.os.Bundle
+import android.os.PersistableBundle
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions
+import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundElementListDialogFragment
+import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import kotlinx.android.synthetic.main.activity_playground.*
 
 
 class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFragment.Listener {
 
-    override fun onPlaygroundElementClicked(position: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    private var selectedElements: List<PlaygroundElement>? = null
+
+    override fun onSelectedPlaygroundElements(elements: List<PlaygroundElement>) {
+
+        selectedElements = elements
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onCreate(savedInstanceState, persistentState)
+        onCreate(savedInstanceState)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_playground)
 
 
         val mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
@@ -37,7 +48,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
         filterButton.setOnClickListener {
 
-            PlaygroundElementListDialogFragment.newInstance().show(supportFragmentManager, "dialog")
+            PlaygroundElementListDialogFragment.newInstance(selectedElements.orEmpty()).show(supportFragmentManager, "dialog")
         }
     }
 
@@ -65,5 +76,6 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
             startActivityForResult(intent, CODE_AUTOCOMPLETE)
         }
     }
+
 
 }

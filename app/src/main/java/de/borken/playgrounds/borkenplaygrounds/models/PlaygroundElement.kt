@@ -6,7 +6,8 @@ import java.io.Serializable
 class PlaygroundElement(
     val id: String,
     val name: String,
-    val image: String
+    val image: String,
+    var selected: Boolean = false
 ): Serializable
 
 
