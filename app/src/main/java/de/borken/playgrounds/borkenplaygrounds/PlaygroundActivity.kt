@@ -3,8 +3,6 @@ package de.borken.playgrounds.borkenplaygrounds
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PersistableBundle
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundElementListDialogFragment
@@ -16,7 +14,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
     private var selectedElements: List<PlaygroundElement>? = null
 
-    override fun onSelectedPlaygroundElements(elements: List<PlaygroundElement>) {
+    override fun onPlaygroundElementsSelected(elements: List<PlaygroundElement>) {
 
         selectedElements = elements
     }
@@ -29,15 +27,6 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-
-
-        val mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
-        // [START enable_dev_mode]
-        val configSettings = FirebaseRemoteConfigSettings.Builder()
-            .setDeveloperModeEnabled(BuildConfig.DEBUG)
-            .build()
-        mFirebaseRemoteConfig.setConfigSettings(configSettings)
-        // [END enable_dev_mode]
 
         initSearchFab()
 

@@ -1,13 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools"
-          android:id="@+id/text"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:paddingBottom="@dimen/list_item_spacing_half"
-          android:paddingLeft="@dimen/list_item_spacing"
-          android:paddingRight="@dimen/list_item_spacing"
-          android:paddingTop="@dimen/list_item_spacing_half"
-          android:textAppearance="@style/TextAppearance.AppCompat.Large"
-          android:background="?attr/selectableItemBackground"
-          tools:text="Hello"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools" xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:orientation="vertical"
+              android:layout_width="match_parent" android:layout_height="match_parent">
+    <com.glide.slider.library.SliderLayout
+            android:id="@+id/playground_images_slider"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"/>
+    <TextView
+            android:id="@+id/playground_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/list_item_spacing_half"
+            android:paddingLeft="@dimen/list_item_spacing"
+            android:paddingRight="@dimen/list_item_spacing"
+            android:paddingTop="@dimen/list_item_spacing_half"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:background="?attr/selectableItemBackground"
+            tools:text="Hello"/>
+    <RatingBar
+            android:layout_width="wrap_content"
+            android:paddingLeft="@dimen/list_item_spacing" android:paddingBottom="@dimen/list_item_spacing_half"
+            android:paddingTop="@dimen/list_item_spacing_half" android:paddingRight="@dimen/list_item_spacing"
+            android:layout_height="0dp" android:id="@+id/playground_rating" android:layout_weight="1"
+            android:numStars="5" android:rating="3" android:stepSize="1" android:isIndicator="true"/>
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:id="@+id/playground_description"
+            android:paddingLeft="@dimen/list_item_spacing" android:paddingBottom="@dimen/list_item_spacing_half"
+            android:paddingTop="@dimen/list_item_spacing_half" android:paddingRight="@dimen/list_item_spacing"/>
+    <de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListView
+            android:id="@+id/playground_elements" android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:elementsAreSelectable="false"
+            app:overFlowHorizontal="true"/>
+    <LinearLayout
+            style="?android:attr/buttonBarStyle"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:visibility="gone"
+            android:layout_height="wrap_content" android:id="@+id/playground_button_container">
+        <Button
+                android:text="@string/playground_button_remark"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/playground_remarks" android:layout_weight="1"/>
+        <Button
+                android:text="@string/playground_button_rate"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:id="@+id/playground_rate" android:layout_weight="1"/>
+    </LinearLayout>
+</LinearLayout>
+
+

@@ -15,4 +15,6 @@
     <string name="playground_elements">Spielgeräte</string>
     <string name="playground_element_description">Playground Element Description</string>
     <string name="playground_element">PLAYGROUND_ELEMENT</string>
+    <string name="playground_button_remark">Anmerkung</string>
+    <string name="playground_button_rate">Bewerten</string>
 </resources>

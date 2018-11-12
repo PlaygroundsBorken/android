@@ -1,0 +1,7 @@
+<resources>
+    <declare-styleable name="PlaygroundElementListView">
+        <attr name="elementsAreSelectable" format="boolean"/>
+        <attr name="elementsPerRow" format="integer"/>
+        <attr name="overFlowHorizontal" format="boolean"/>
+    </declare-styleable>
+</resources>
