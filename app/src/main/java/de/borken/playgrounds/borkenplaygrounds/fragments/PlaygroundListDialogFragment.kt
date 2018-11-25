@@ -1,23 +1,31 @@
 package de.borken.playgrounds.borkenplaygrounds.fragments
 
-import android.content.Context
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.Point
+import android.graphics.Rect
+import android.graphics.RectF
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.text.Html
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.view.animation.DecelerateInterpolator
+import android.widget.EditText
+import com.bumptech.glide.Glide
 import com.glide.slider.library.SliderLayout
-import com.glide.slider.library.SliderTypes.DefaultSliderView
 import de.borken.playgrounds.borkenplaygrounds.R
+import de.borken.playgrounds.borkenplaygrounds.glide.PlaygroundSliderView
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
+import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
-import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.*
 
 
 /**
@@ -30,82 +38,101 @@ import kotlinx.android.synthetic.main.fragment_playground_list_dialog_item.view.
  * </pre>
  *
  */
-class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
+class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.PlaygroundElementsListener {
+
+    override fun playgroundElementsLoaded(playgroundElements: List<PlaygroundElement>) {
+
+        playgroundElements.forEach {
+            playground_elements.playgroundElementAdded(it)
+        }
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // Retrieve and cache the system's default "short" animation time.
+        mShortAnimationDuration = resources.getInteger(android.R.integer.config_shortAnimTime)
         return inflater.inflate(R.layout.fragment_playground_list_dialog, container, false)
     }
 
+    private var playground: Playground? = null
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        list.layoutManager = LinearLayoutManager(context)
-        list.adapter =
-                PlaygroundAdapter(arguments?.getSerializable("PLAYGROUND_LIST") as? Playground)
+
+        this.playground = arguments?.getSerializable("PLAYGROUND_LIST") as? Playground
+
+        playground_name.text = playground?.name
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            playground_description.text =
+                    Html.fromHtml(playground?.description.orEmpty(), Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            playground_description.text = Html.fromHtml(playground?.description.orEmpty())
+        }
+
+        if (playground?.rating?.toFloat() !== null)
+            playground_rating.rating = playground!!.rating!!.toFloat()
+        playground?.images.orEmpty().forEach { image ->
+
+            val sliderView = PlaygroundSliderView(view.context)
+            sliderView
+                .image(image)
+                .setBackgroundColor(Color.WHITE)
+                .setProgressBarVisible(true)
+
+            sliderView.setOnSliderClickListener {
+                it as PlaygroundSliderView
+                zoomImageFromThumb(it.imageView, image)
+            }
+
+            playground_images_slider.addSlider(sliderView)
+        }
+
+        playground_images_slider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
+        playground_images_slider.setDuration(10000)
+
+        upvote.text = playground?.upVotes.toString()
+        downvote.text = playground?.downVotes.toString()
+
+        playground?.loadPlaygroundElements(this)
+
+        upvote.setOnClickListener {
+
+        }
+
+        downvote.setOnClickListener {
+
+        }
+
+        playground_remarks.setOnClickListener {
+            val builder = AlertDialog.Builder(view.context)
+            builder.setTitle("Title")
+
+            val input = EditText(view.context)
+            input.inputType = InputType.TYPE_CLASS_TEXT
+            builder.setView(input)
+
+            builder.setPositiveButton(
+                "OK"
+            ) { _, _ ->
+                saveCustomerRemark(input.text.toString(), playground)
+
+            }
+            builder.setNegativeButton(
+                "Cancel"
+            ) { dialog, _ -> dialog.cancel() }
+
+            builder.show()
+        }
+
+        //val mBehavior = BottomSheetBehavior.from(list)
+
     }
 
-    private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
-        RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playground_list_dialog_item, parent, false)) {
-
-        internal val text: TextView = itemView.playground_name
-        internal val playgroundImageSlider = itemView.playground_images_slider
-        internal val playgroundDescription = itemView.playground_description
-        internal val playgroundRating = itemView.playground_rating
-        internal val playgroundElements = itemView.playground_elements
-
-        init {
-
-        }
-    }
-
-    private inner class PlaygroundAdapter internal constructor(private val mPlayground: Playground?) :
-        RecyclerView.Adapter<ViewHolder>() {
-
-        override fun getItemCount(): Int = 1
-
-        private lateinit var viewContext: Context
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            viewContext = parent.context
-            return ViewHolder(LayoutInflater.from(parent.context), parent)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
-            holder.text.text = mPlayground?.name
-
-            var descriptionText = "<p>" + mPlayground?.description + "</p><br>"
-            mPlayground?.bulletPoints?.forEach {
-                descriptionText += "<li>"
-                descriptionText += " "
-                descriptionText += it
-                descriptionText += "</li>"
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                holder.playgroundDescription.text = Html.fromHtml(descriptionText, Html.FROM_HTML_MODE_COMPACT)
-            } else {
-                holder.playgroundDescription.text = Html.fromHtml(descriptionText)
-            }
-
-            if (mPlayground?.rating?.toFloat() !== null)
-                holder.playgroundRating.rating = mPlayground.rating.toFloat()
-            mPlayground?.images.orEmpty().forEach {
-
-                val sliderView = DefaultSliderView(viewContext)
-                sliderView
-                    .image(it)
-                    .setBackgroundColor(Color.WHITE)
-                    .setProgressBarVisible(true)
-
-                holder.playgroundImageSlider.addSlider(sliderView)
-            }
-
-            holder.playgroundImageSlider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
-            holder.playgroundImageSlider.setDuration(4000)
-
-            holder.playgroundElements.setup(mPlayground?.playgroundElements.orEmpty())
-        }
+    private fun saveCustomerRemark(toString: String, playground: Playground?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     companion object {
@@ -117,5 +144,146 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment() {
                     putSerializable("PLAYGROUND_LIST", playgroundId)
                 }
             }
+    }
+
+    // Hold a reference to the current animator,
+    // so that it can be canceled mid-way.
+    private var mCurrentAnimator: Animator? = null
+
+    // The system "short" animation time duration, in milliseconds. This
+    // duration is ideal for subtle animations or animations that occur
+    // very frequently.
+    private var mShortAnimationDuration: Int = 0
+
+    private fun zoomImageFromThumb(thumbView: View, imageResId: String) {
+        // If there's an animation in progress, cancel it
+        // immediately and proceed with this one.
+        mCurrentAnimator?.cancel()
+
+
+
+        Glide.with(this)
+            .load(imageResId)
+            .into(expanded_image)
+
+        // Calculate the starting and ending bounds for the zoomed-in image.
+        // This step involves lots of math. Yay, math.
+        val startBoundsInt = Rect()
+        val finalBoundsInt = Rect()
+        val globalOffset = Point()
+
+        // The start bounds are the global visible rectangle of the thumbnail,
+        // and the final bounds are the global visible rectangle of the container
+        // view. Also set the container view's offset as the origin for the
+        // bounds, since that's the origin for the positioning animation
+        // properties (X, Y).
+        thumbView.getGlobalVisibleRect(startBoundsInt)
+
+        container.getGlobalVisibleRect(finalBoundsInt, globalOffset)
+        startBoundsInt.offset(-globalOffset.x, -globalOffset.y)
+        finalBoundsInt.offset(-globalOffset.x, -globalOffset.y)
+
+        val startBounds = RectF(startBoundsInt)
+        val finalBounds = RectF(finalBoundsInt)
+
+        // Adjust the start bounds to be the same aspect ratio as the final
+        // bounds using the "center crop" technique. This prevents undesirable
+        // stretching during the animation. Also calculate the start scaling
+        // factor (the end scaling factor is always 1.0).
+        val startScale: Float
+        if ((finalBounds.width() / finalBounds.height() > startBounds.width() / startBounds.height())) {
+            // Extend start bounds horizontally
+            startScale = startBounds.height() / finalBounds.height()
+            val startWidth: Float = startScale * finalBounds.width()
+            val deltaWidth: Float = (startWidth - startBounds.width()) / 2
+            startBounds.left -= deltaWidth.toInt()
+            startBounds.right += deltaWidth.toInt()
+        } else {
+            // Extend start bounds vertically
+            startScale = startBounds.width() / finalBounds.width()
+            val startHeight: Float = startScale * finalBounds.height()
+            val deltaHeight: Float = (startHeight - startBounds.height()) / 2f
+            startBounds.top -= deltaHeight.toInt()
+            startBounds.bottom += deltaHeight.toInt()
+        }
+
+        // Hide the thumbnail and show the zoomed-in view. When the animation
+        // begins, it will position the zoomed-in view in the place of the
+        // thumbnail.
+        thumbView.alpha = 0f
+        expanded_image.visibility = View.VISIBLE
+        list_item_container.alpha = 0.1f
+
+        // Set the pivot point for SCALE_X and SCALE_Y transformations
+        // to the top-left corner of the zoomed-in view (the default
+        // is the center of the view).
+        expanded_image.pivotX = 0f
+        expanded_image.pivotY = 0f
+
+        // Construct and run the parallel animation of the four translation and
+        // scale properties (X, Y, SCALE_X, and SCALE_Y).
+        mCurrentAnimator = AnimatorSet().apply {
+            play(
+                ObjectAnimator.ofFloat(
+                    expanded_image,
+                    View.X,
+                    startBounds.left,
+                    finalBounds.left
+                )
+            ).apply {
+                with(ObjectAnimator.ofFloat(expanded_image, View.Y, startBounds.top, finalBounds.top))
+                with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_X, startScale, 1f))
+                with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_Y, startScale, 1f))
+            }
+            duration = mShortAnimationDuration.toLong()
+            interpolator = DecelerateInterpolator()
+            addListener(object : AnimatorListenerAdapter() {
+
+                override fun onAnimationEnd(animation: Animator) {
+                    mCurrentAnimator = null
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    mCurrentAnimator = null
+                }
+            })
+            start()
+        }
+
+        // Upon clicking the zoomed-in image, it should zoom back down
+        // to the original bounds and show the thumbnail instead of
+        // the expanded image.
+        expanded_image.setOnClickListener {
+            mCurrentAnimator?.cancel()
+
+            // Animate the four positioning/sizing properties in parallel,
+            // back to their original values.
+            mCurrentAnimator = AnimatorSet().apply {
+                play(ObjectAnimator.ofFloat(expanded_image, View.X, startBounds.left)).apply {
+                    with(ObjectAnimator.ofFloat(expanded_image, View.Y, startBounds.top))
+                    with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_X, startScale))
+                    with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_Y, startScale))
+                }
+                duration = mShortAnimationDuration.toLong()
+                interpolator = DecelerateInterpolator()
+                addListener(object : AnimatorListenerAdapter() {
+
+                    override fun onAnimationEnd(animation: Animator) {
+                        thumbView.alpha = 1f
+                        expanded_image.visibility = View.GONE
+                        list_item_container.alpha = 1f
+                        mCurrentAnimator = null
+                    }
+
+                    override fun onAnimationCancel(animation: Animator) {
+                        thumbView.alpha = 1f
+                        expanded_image.visibility = View.GONE
+                        list_item_container.alpha = 1f
+                        mCurrentAnimator = null
+                    }
+                })
+                start()
+            }
+        }
     }
 }

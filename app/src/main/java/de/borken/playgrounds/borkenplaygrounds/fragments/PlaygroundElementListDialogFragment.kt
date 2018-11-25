@@ -25,7 +25,7 @@ import java.io.Serializable
  */
 class PlaygroundElementListDialogFragment : BottomSheetDialogFragment(), PlaygroundElementListView.Listener {
 
-    private val selectedElements: MutableSet<PlaygroundElement> = mutableSetOf()
+    private var selectedElements: MutableSet<PlaygroundElement> = mutableSetOf()
     private var mListener: Listener? = null
 
     override fun onCreateView(
@@ -39,14 +39,14 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment(), Playgro
 
         val playgroundList = arguments?.getSerializable("playground_element") as? List<*>
 
-        val playgroundElements = playgroundList?.filter { it is PlaygroundElement }?.map {
+        selectedElements.addAll(playgroundList?.filter { it is PlaygroundElement }?.map {
             it as PlaygroundElement
-        }
+        }.orEmpty())
         
-        if (playgroundElements.isNullOrEmpty())
+        if (selectedElements.isNullOrEmpty())
             list.setup(null, this)
         else
-            list.setup(playgroundElements, this)
+            list.setup(selectedElements.toList(), this)
     }
 
     override fun onAttach(context: Context) {

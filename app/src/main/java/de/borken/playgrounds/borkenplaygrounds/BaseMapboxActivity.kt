@@ -1,13 +1,18 @@
 package de.borken.playgrounds.borkenplaygrounds
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.location.Location
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.support.v7.app.AppCompatActivity
+import android.widget.Toast
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.gson.JsonObject
+import com.mapbox.android.core.permissions.PermissionsListener
+import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.api.geocoding.v5.models.CarmenFeature
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
@@ -18,19 +23,24 @@ import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
+import com.mapbox.mapboxsdk.geometry.LatLngBounds
+import com.mapbox.mapboxsdk.location.modes.CameraMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
-import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygrounds
+import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import kotlinx.android.synthetic.main.activity_playground.*
 
-open class BaseMapboxActivity : AppCompatActivity() {
+open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
 
+    private var originLocation: Location? = null
+    private var permissionsManager: PermissionsManager? = null
     private var map: MapboxMap? = null
-    private val markerToPlayground = mutableMapOf<Long, Playground>()
+    private val markerToPlayground: MutableMap<Long, Playground> = mutableMapOf()
+    private val loadedPlaygrounds = mutableListOf<Playground>()
     protected val CODE_AUTOCOMPLETE = 1
     protected lateinit var autocompleteLocation: List<CarmenFeature>
 
@@ -49,6 +59,10 @@ open class BaseMapboxActivity : AppCompatActivity() {
         mapView.getMapAsync { mapboxMap ->
             map = mapboxMap
 
+            if (loadedPlaygrounds.isNotEmpty())
+                addMarkersToMap(mapboxMap, loadedPlaygrounds)
+
+            enableLocationComponent()
             mapboxMap.setOnMarkerClickListener {
 
                 val playground = this.markerToPlayground[it.id]
@@ -72,33 +86,81 @@ open class BaseMapboxActivity : AppCompatActivity() {
         initLocations()
     }
 
+    private fun addMarkersToMap(mapboxMap: MapboxMap, playgrounds: List<Playground>) {
+        val bitmap = getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round)
+        val icon = IconFactory.getInstance(this).fromBitmap(bitmap)
+
+        val builder = LatLngBounds.Builder()
+        playgrounds.forEach {
+            val latLng = LatLng(
+                it.location.latitude(),
+                it.location.longitude()
+            )
+            val addMarker = mapboxMap.addMarker(
+                MarkerOptions().position(
+                    latLng
+                ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
+            )
+
+            builder.include(latLng)
+
+            this.markerToPlayground[addMarker.id] = it
+        }
+
+        if (playgrounds.size == 1) {
+            val location = playgrounds.first().location
+            mapboxMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(location.latitude(), location.longitude())))
+        } else if (playgrounds.size > 1) {
+            mapboxMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
+        }
+    }
+
+    protected fun filterMarkers(selectedPlaygroundElements: List<PlaygroundElement>) {
+
+        val selectedPlaygroundElementIds = selectedPlaygroundElements.map { it.id }
+        var activeMarkerToPlayground = markerToPlayground.mapNotNull { (id, playground) ->
+            val containsPlaygroundElement = playground.mPlaygroundElements.any { it in selectedPlaygroundElementIds }
+            if (containsPlaygroundElement) {
+                Pair(id, playground)
+            } else {
+                null
+            }
+        }.toMap()
+
+        if (selectedPlaygroundElements.isEmpty()) {
+            activeMarkerToPlayground = markerToPlayground
+        }
+
+        map?.markers?.forEach {
+
+            if (it.id !in activeMarkerToPlayground.keys) {
+                map?.removeMarker(it)
+            }
+        }
+
+        if (map != null)
+            addMarkersToMap(map!!, activeMarkerToPlayground.values.toList())
+    }
+
     private fun initLocations() {
 
-
-        val bitmap = getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round)
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
         val db = FirebaseFirestore.getInstance()
         db.firestoreSettings = settings
         db.collection("playgrounds")
+            .whereEqualTo("trash", false)
             .get()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    this.autocompleteLocation = tryParsePlaygrounds(task.result!!)?.map {
+                    this.autocompleteLocation = Playground.tryParsePlaygrounds(task.result!!)?.map {
 
-                        val icon = IconFactory.getInstance(this).fromBitmap(bitmap)
-                        val addedMarker = map?.addMarker(
-                            MarkerOptions().position(
-                                LatLng(
-                                    it.location.latitude(),
-                                    it.location.longitude()
-                                )
-                            ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
-                        )
+                        loadedPlaygrounds.add(it)
 
-                        if (addedMarker !== null)
-                            markerToPlayground[addedMarker.id] = it
+                        if (map != null) {
+                            addMarkersToMap(map!!, loadedPlaygrounds)
+                        }
 
                         CarmenFeature.builder().text(it.name)
                             .placeName(it.name)
@@ -138,6 +200,42 @@ open class BaseMapboxActivity : AppCompatActivity() {
                 .zoom(14.0)
                 .build()
             map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    private fun enableLocationComponent() {
+        // Check if permissions are enabled and if not request
+        if (PermissionsManager.areLocationPermissionsGranted(this)) {
+            // Activate the MapboxMap LocationComponent to show user location
+            // Adding in LocationComponentOptions is also an optional parameter
+            val locationComponent = map?.locationComponent
+            locationComponent?.activateLocationComponent(this)
+            locationComponent?.isLocationComponentEnabled = true
+            // Set the component's camera mode
+            locationComponent?.cameraMode = CameraMode.TRACKING
+            originLocation = locationComponent?.lastKnownLocation
+
+        } else {
+            permissionsManager = PermissionsManager(this)
+            permissionsManager!!.requestLocationPermissions(this)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
+        permissionsManager?.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun onExplanationNeeded(permissionsToExplain: MutableList<String>?) {
+
+        Toast.makeText(this, R.string.user_location_permission_explanation, Toast.LENGTH_LONG).show()
+    }
+
+    override fun onPermissionResult(granted: Boolean) {
+        if (granted) {
+            enableLocationComponent()
         }
     }
 

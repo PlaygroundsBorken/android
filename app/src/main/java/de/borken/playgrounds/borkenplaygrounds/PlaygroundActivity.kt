@@ -17,6 +17,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
     override fun onPlaygroundElementsSelected(elements: List<PlaygroundElement>) {
 
         selectedElements = elements
+        filterMarkers(elements)
     }
 
     override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {

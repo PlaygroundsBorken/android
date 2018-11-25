@@ -17,4 +17,12 @@
     <string name="playground_element">PLAYGROUND_ELEMENT</string>
     <string name="playground_button_remark">Anmerkung</string>
     <string name="playground_button_rate">Bewerten</string>
+    <string name="user_location_permission_explanation">Brauchen wir</string>
+    <string name="unknown_geofence_error">Unknown</string>
+    <string name="geofence_not_available">Not Available</string>
+    <string name="geofence_too_many_geofences">To Many</string>
+    <string name="geofence_too_many_pending_intents">Pending</string>
+    <string name="permission_rationale">Brauchen wir</string>
+    <string name="permission_denied_explanation">sicher doch</string>
+    <string name="settings">Einstellungen</string>
 </resources>

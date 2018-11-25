@@ -21,10 +21,12 @@ import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_ite
 
 class PlaygroundElementListView : RecyclerView {
 
+
     private var _elementsAreClickable: Boolean = false
     private var _elementsPerRow: Int = 2
     private var _overflowHorizontal: Boolean = false
-    private var playgroundElements: List<PlaygroundElement> = emptyList()
+    private var playgroundElements: MutableList<PlaygroundElement> = mutableListOf()
+    private var selectedPlaygroundElements: List<PlaygroundElement> = mutableListOf()
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -64,19 +66,12 @@ class PlaygroundElementListView : RecyclerView {
         a.recycle()
     }
 
+
     fun setup(playgroundElements: List<PlaygroundElement>?, listener: Listener? = null) {
 
         this.listener = listener
-        if (playgroundElements == null)
-            loadPlaygroundElements()
-        else {
-            this.playgroundElements = playgroundElements
-            adapter = PlaygroundElementAdapter(playgroundElements.size)
-            layoutManager = if (_overflowHorizontal)
-                LinearLayoutManager(context, HORIZONTAL, false)
-            else
-                GridLayoutManager(context, _elementsPerRow)
-        }
+        this.selectedPlaygroundElements = playgroundElements.orEmpty()
+        loadPlaygroundElements()
     }
 
     private fun loadPlaygroundElements() {
@@ -85,13 +80,14 @@ class PlaygroundElementListView : RecyclerView {
             .build()
         val db = FirebaseFirestore.getInstance()
         db.firestoreSettings = settings
-        db.collection("playground-elements")
+        db.collection("playgroundelements")
+            .whereEqualTo("trash", false)
             .get()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
 
-                    this.playgroundElements = tryParsePlaygroundElements(task.result).orEmpty()
-                    adapter = PlaygroundElementAdapter(playgroundElements.size)
+                    this.playgroundElements = tryParsePlaygroundElements(task.result).toMutableList()
+                    adapter = PlaygroundElementAdapter()
                     layoutManager = if (_overflowHorizontal)
                         LinearLayoutManager(context, HORIZONTAL, false)
                     else
@@ -101,10 +97,10 @@ class PlaygroundElementListView : RecyclerView {
     }
 
     private fun togglePlaygroundElement(playgroundElement: PlaygroundElement, playgroundElementImageView: ImageView) {
-        var padding = 8.dp
+        val padding = 8.dp
         var backgroundResource = R.drawable.image_border
         if (playgroundElement.selected) {
-            padding = 16.dp
+            //padding = 16.dp
             backgroundResource = R.drawable.image_border_selected
         }
 
@@ -134,7 +130,7 @@ class PlaygroundElementListView : RecyclerView {
         }
     }
 
-    private inner class PlaygroundElementAdapter internal constructor(private val mItemCount: Int) :
+    private inner class PlaygroundElementAdapter internal constructor() :
         RecyclerView.Adapter<ViewHolder>() {
 
         internal lateinit var viewContext: Context
@@ -155,10 +151,15 @@ class PlaygroundElementListView : RecyclerView {
                 .load(element.image)
                 .apply(RequestOptions.circleCropTransform())
                 .into(holder.playgroundElementImageView)
+
+            if (selectedPlaygroundElements.any { it.id == element.id }) {
+                element.selected = true
+                togglePlaygroundElement(element, holder.playgroundElementImageView)
+            }
         }
 
         override fun getItemCount(): Int {
-            return mItemCount
+            return playgroundElements.size
         }
     }
 
