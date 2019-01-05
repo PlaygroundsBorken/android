@@ -12,46 +12,6 @@ class User(
 
 ) : Serializable {
 
-    val downVotedPlaygrounds: List<Playground>
-        get() {
-            return getVotedPlaygrounds(this.mDownVotedPlaygrounds)
-
-        }
-
-    private fun getVotedPlaygrounds(downVotedPlaygrounds: List<String>): List<Playground> {
-        val settings = FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(true)
-            .build()
-        val db = FirebaseFirestore.getInstance()
-        db.firestoreSettings = settings
-        val documents = db.collection("playgrounds")
-            .whereArrayContains("id", downVotedPlaygrounds)
-            .get()
-            .result
-
-        return Playground.tryParsePlaygrounds(documents).orEmpty()
-    }
-
-    val upVotedPlaygrounds: List<Playground>
-        get() {
-            return getVotedPlaygrounds(this.mUpVotedPlaygrounds)
-        }
-
-    val userRemarks: List<Remark>
-        get() {
-            val settings = FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
-                .build()
-            val db = FirebaseFirestore.getInstance()
-            db.firestoreSettings = settings
-            val documents = db.collection("userRemarks")
-                .whereArrayContains("id", this.mUserRemarks)
-                .get()
-                .result
-
-            return Remark.tryParseRemarks(documents)
-        }
-
     interface UserCreated {
 
         fun userIsCreated(user: User?)
@@ -146,11 +106,11 @@ class User(
         }
     }
 
-    private lateinit var mUserRemarks: List<String>
+    var mUserRemarks: MutableList<String> = mutableListOf()
 
-    private lateinit var mUpVotedPlaygrounds: List<String>
+    var mUpVotedPlaygrounds: MutableList<String> = mutableListOf()
 
-    private lateinit var mDownVotedPlaygrounds: List<String>
+    var mDownVotedPlaygrounds: MutableList<String> = mutableListOf()
 
     private fun setLists(
         downVotedPlaygrounds: List<String>,
@@ -158,9 +118,9 @@ class User(
         userRemarks: List<String>
     ): User {
 
-        this.mDownVotedPlaygrounds = downVotedPlaygrounds
-        this.mUpVotedPlaygrounds = upVotedPlaygrounds
-        this.mUserRemarks = userRemarks
+        this.mDownVotedPlaygrounds.addAll(downVotedPlaygrounds)
+        this.mUpVotedPlaygrounds.addAll(upVotedPlaygrounds)
+        this.mUserRemarks.addAll(userRemarks)
 
         return this
     }

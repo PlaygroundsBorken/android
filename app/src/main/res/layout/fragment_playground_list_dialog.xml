@@ -33,18 +33,22 @@
                                 app:layout_constraintDimensionRatio="H,16:9"
                                 app:layout_constraintStart_toStartOf="parent"
                                 app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintTop_toTopOf="parent" >
+                                app:layout_constraintTop_toTopOf="parent">
                         </com.glide.slider.library.SliderLayout>
-                        <RatingBar
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" android:id="@+id/playground_rating"
-                                style="?android:attr/ratingBarStyleSmall"
-                                android:numStars="5" android:rating="3" android:stepSize="1"
-                                android:isIndicator="true"
-                                android:background="#fff"
-                                app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
-                                android:padding="8dp"
-                                app:layout_constraintRight_toRightOf="parent"/>
+                        <LinearLayout android:layout_width="wrap_content"
+                                      android:layout_height="wrap_content"
+                                      android:background="#fff"
+                                      app:layout_constraintBottom_toBottomOf="parent" android:layout_marginBottom="8dp"
+                                      app:layout_constraintRight_toRightOf="parent">
+                            <RatingBar
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" android:id="@+id/playground_rating"
+                                    style="?android:attr/ratingBarStyleSmall"
+                                    android:numStars="5" android:rating="3" android:stepSize="1"
+                                    android:isIndicator="true"
+                                    android:layout_margin="8dp"/>
+                        </LinearLayout>
+
                     </android.support.constraint.ConstraintLayout>
                     <TextView
                             android:id="@+id/playground_name"
@@ -56,14 +60,16 @@
                             android:paddingTop="@dimen/list_item_spacing_half"
                             android:textAppearance="@style/TextAppearance.AppCompat.Large"
                             android:background="?attr/selectableItemBackground"
-                            tools:text="Hello"/>
+                            tools:text="Hello" android:fontFamily="@font/kidsn"/>
                     <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content" android:id="@+id/playground_description"
                             android:paddingLeft="@dimen/list_item_spacing"
                             android:paddingBottom="@dimen/list_item_spacing_half"
                             android:paddingTop="@dimen/list_item_spacing_half"
-                            android:paddingRight="@dimen/list_item_spacing"/>
+                            android:paddingRight="@dimen/list_item_spacing" android:fontFamily="casual"
+                            android:lineSpacingExtra="8sp" android:textSize="18sp" android:text="Test"
+                            android:typeface="normal"/>
 
                     <de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListViewSquare
                             android:id="@+id/playground_elements" android:layout_width="match_parent"
@@ -74,35 +80,31 @@
                             style="?android:attr/buttonBarStyle"
                             android:orientation="horizontal"
                             android:layout_width="match_parent"
-                            android:layout_height="80dp" android:id="@+id/playground_button_container"
-                            android:visibility="visible">
+                            android:layout_height="100dp" android:id="@+id/playground_button_container"
+                            android:visibility="gone">
 
-                        <View
-                                android:layout_width="80dp"
-                                android:layout_height="80dp" android:id="@+id/view" android:layout_weight="1"/>
-                        <Button
-                                android:text="0"
-                                style="?android:attr/buttonBarButtonStyle"
-                                android:drawableLeft="@drawable/ic_baseline_arrow_upward_24px"
-                                android:layout_width="wrap_content"
-                                android:layout_height="80dp" android:id="@+id/upvote"
-                                android:layout_weight="1"
-                                android:drawableStart="@drawable/ic_baseline_arrow_upward_24px"/>
-                        <Button
-                                android:text="0"
-                                android:drawableLeft="@drawable/ic_baseline_arrow_downward_24px"
+                        <ImageButton
                                 style="?android:attr/buttonBarButtonStyle"
                                 android:layout_width="wrap_content"
-                                android:layout_height="80dp" android:id="@+id/downvote"
-                                android:layout_weight="1"
-                                android:drawableStart="@drawable/ic_baseline_arrow_downward_24px"/>
+                                android:layout_height="100dp" android:id="@+id/upvote"
+                                android:layout_weight="1" android:fontFamily="@font/kidsn"
+                                android:contentDescription="" android:src="@drawable/ic_happy"
+                                android:scaleType="center" android:padding="8dp"/>
+                        <ImageButton
+                                style="?android:attr/buttonBarButtonStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="100dp" android:id="@+id/downvote"
+                                android:layout_weight="1" android:fontFamily="@font/kidsn"
+                                android:contentDescription="" android:src="@drawable/ic_sad"
+                                tools:src="@drawable/ic_sad" android:scaleType="center" android:padding="8dp"/>
                         <Button
-                                android:drawableLeft="@drawable/ic_baseline_chat_24px"
+                                android:drawableRight="@drawable/ic_baseline_chat_24px"
                                 android:text="@string/playground_button_remark"
                                 style="?android:attr/buttonBarButtonStyle"
                                 android:layout_width="wrap_content"
-                                android:layout_height="80dp" android:id="@+id/playground_remarks"
-                                android:layout_weight="1" android:drawableStart="@drawable/ic_baseline_chat_24px"/>
+                                android:layout_height="100dp" android:id="@+id/playground_remarks"
+                                android:layout_weight="1" android:drawableEnd="@drawable/ic_baseline_chat_24px"
+                                android:fontFamily="@font/kidsn"/>
                     </LinearLayout>
                 </LinearLayout>
             </android.support.v4.widget.NestedScrollView>

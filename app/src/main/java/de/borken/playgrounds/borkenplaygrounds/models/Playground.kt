@@ -16,7 +16,8 @@ class Playground(
     val ratingCount: Long? = 0,
     val images: List<String> = emptyList(),
     val upVotes: Int = 0,
-    val downVotes: Int = 0
+    val downVotes: Int = 0,
+    val description2: String? = ""
 ) : Serializable {
 
     fun loadPlaygroundElements(listener: PlaygroundElementsListener) {
@@ -49,6 +50,7 @@ class Playground(
                 val lat = documentSnapshot.getString("lat")
                 val lng = documentSnapshot.getString("lng")
                 val description = documentSnapshot.get("description") as Map<*, *>
+                //val description2 = documentSnapshot.get("description2") as Map<*, *>
                 val age = documentSnapshot.getString("age")
                 val rating = documentSnapshot.getLong("rating")
                 val ratingCount = documentSnapshot.getLong("ratingCount")
@@ -81,7 +83,11 @@ class Playground(
 
                         playgroundHtml = description["html"] as? String
                     }
+                    var playgroundHtml2: String? = ""
+                    /*if (description2.containsKey("html")) {
 
+                        playgroundHtml2 = description2["html"] as? String
+                    }*/
                     Playground(
                         id,
                         name,
@@ -92,7 +98,8 @@ class Playground(
                         ratingCount,
                         imageList,
                         upVotes,
-                        downVotes
+                        downVotes,
+                        playgroundHtml2.orEmpty()
                     ).setList(playgroundElementList)
                 } else
                     null

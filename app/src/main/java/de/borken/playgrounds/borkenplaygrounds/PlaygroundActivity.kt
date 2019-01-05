@@ -49,9 +49,10 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
             val placeOptions = PlaceOptions.builder()
                 .limit(10)
-                .language("DE")
+                .language("de")
                 .country("DE")
                 .backgroundColor(Color.parseColor("#AAFFFFFF"))
+
 
             autocompleteLocation.forEach { feature ->
                 placeOptions.addInjectedFeature(feature)
@@ -66,6 +67,4 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
             startActivityForResult(intent, CODE_AUTOCOMPLETE)
         }
     }
-
-
 }

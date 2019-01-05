@@ -1,14 +1,13 @@
 package de.borken.playgrounds.borkenplaygrounds.fragments
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
+import android.animation.*
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.RectF
+import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
@@ -16,15 +15,21 @@ import android.text.Html
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
 import com.bumptech.glide.Glide
 import com.glide.slider.library.SliderLayout
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.glide.PlaygroundSliderView
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
+import de.borken.playgrounds.borkenplaygrounds.playgroundApp
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 
 
@@ -47,7 +52,6 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         }
     }
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -59,6 +63,9 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
     private var playground: Playground? = null
 
+    private var fusedLocationClient: FusedLocationProviderClient? = null
+
+    @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         this.playground = arguments?.getSerializable("PLAYGROUND_LIST") as? Playground
@@ -93,17 +100,81 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         playground_images_slider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
         playground_images_slider.setDuration(10000)
 
-        upvote.text = playground?.upVotes.toString()
-        downvote.text = playground?.downVotes.toString()
+        //upvote.text = playground?.upVotes.toString()
+        //downvote.text = playground?.downVotes.toString()
 
         playground?.loadPlaygroundElements(this)
+        val upVotedPlaygrounds = context?.applicationContext?.playgroundApp?.activeUser?.mUpVotedPlaygrounds
+        val downVotedPlaygrounds = context?.applicationContext?.playgroundApp?.activeUser?.mDownVotedPlaygrounds
 
         upvote.setOnClickListener {
 
+
+            val playgroundIsUpVoted = upVotedPlaygrounds?.contains(playground?.id) ?: false
+            val playgroundIsDownVoted = downVotedPlaygrounds?.contains(playground?.id) ?: false
+            val from = FloatArray(3)
+            val to = FloatArray(3)
+
+            Color.colorToHSV(Color.parseColor("#FF707070"), from)
+            Color.colorToHSV(Color.parseColor("#FF42f44b"), to)
+
+            if (!playgroundIsUpVoted && !playgroundIsDownVoted) {
+
+                if (playgroundIsDownVoted) {
+                    animateImageButton(to, from, downvote)
+                    downvote.scaleType = ImageView.ScaleType.CENTER
+                    if (playground != null) {
+                        downVotedPlaygrounds?.add(playground!!.id)
+                    }
+                }
+
+                animateImageButton(from, to, it as ImageButton)
+                it.scaleType = ImageView.ScaleType.CENTER_CROP
+                if (playground != null) {
+                    upVotedPlaygrounds?.add(playground!!.id)
+                }
+            } else {
+
+                animateImageButton(to, from, it as ImageButton)
+                it.scaleType = ImageView.ScaleType.CENTER
+                if (playground != null) {
+                    upVotedPlaygrounds?.remove(playground!!.id)
+                }
+            }
         }
 
         downvote.setOnClickListener {
+            val from = FloatArray(3)
+            val to = FloatArray(3)
 
+            Color.colorToHSV(Color.parseColor("#FF707070"), from)
+            Color.colorToHSV(Color.parseColor("#FFf44150"), to)
+
+            val playgroundIsUpVoted = upVotedPlaygrounds?.contains(playground?.id) ?: false
+            val playgroundIsDownVoted = downVotedPlaygrounds?.contains(playground?.id) ?: false
+            if (!playgroundIsDownVoted && !playgroundIsUpVoted) {
+
+                if (playgroundIsUpVoted) {
+                    animateImageButton(to, from, upvote)
+                    upvote.scaleType = ImageView.ScaleType.CENTER
+                    if (playground != null) {
+                        upVotedPlaygrounds?.add(playground!!.id)
+                    }
+                }
+
+                animateImageButton(from, to, it as ImageButton)
+                it.scaleType = ImageView.ScaleType.CENTER_CROP
+                if (playground != null) {
+                    downVotedPlaygrounds?.add(playground!!.id)
+                }
+            } else {
+
+                animateImageButton(to, from, it as ImageButton)
+                it.scaleType = ImageView.ScaleType.CENTER
+                if (playground != null) {
+                    downVotedPlaygrounds?.remove(playground!!.id)
+                }
+            }
         }
 
         playground_remarks.setOnClickListener {
@@ -128,11 +199,50 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         }
 
         //val mBehavior = BottomSheetBehavior.from(list)
+        if (activity != null)
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity!!)
+
+        if (fusedLocationClient != null) {
+
+            fusedLocationClient!!.lastLocation
+                .addOnSuccessListener { location : Location? ->
+
+                    val playgroundLocation = Location("point B")
+                    playgroundLocation.latitude = playground?.location?.latitude() ?: 0.0
+                    playgroundLocation.longitude = playground?.location?.longitude() ?: 0.0
+
+                    val distance = location?.distanceTo(playgroundLocation)
+
+                    if (distance !== null && distance < 100) {
+
+                        playground_button_container.visibility = VISIBLE
+                    }
+                }
+        }
+    }
+
+    private fun animateImageButton(from: FloatArray, to: FloatArray, imageButton: ImageButton) {
+
+        val anim = ValueAnimator.ofFloat(0.0f, 1.0f)
+        anim.duration = 1000
+
+        val hsv = FloatArray(3)
+
+        anim.addUpdateListener {
+            hsv[0] = from[0] + (to[0] - from[0]) * it.animatedFraction
+            hsv[1] = from[1] + (to[1] - from[1]) * it.animatedFraction
+            hsv[2] = from[2] + (to[2] - from[2]) * it.animatedFraction
+
+            imageButton.setColorFilter(Color.HSVToColor(hsv))
+        }
+
+        anim.start()
 
     }
 
+
     private fun saveCustomerRemark(toString: String, playground: Playground?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     companion object {

@@ -27,6 +27,7 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds
 import com.mapbox.mapboxsdk.location.modes.CameraMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
+import com.mapbox.mapboxsdk.plugins.localization.MapLocale
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
@@ -75,6 +76,7 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
             }
 
             val localizationPlugin = LocalizationPlugin(mapView!!, mapboxMap)
+            localizationPlugin.setMapLanguage(MapLocale(MapLocale.GERMAN))
 
             try {
                 localizationPlugin.matchMapLanguageWithDeviceDefault()
