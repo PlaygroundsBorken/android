@@ -29,3 +29,8 @@ fun getBitmapFromVectorDrawable(context: Context, drawableId: Int): Bitmap {
 
     return bitmap
 }
+
+val Map<*,*>?.toStringList: List<String>
+    get() = this?.filter { it.value is Boolean && it.key is String && it.value as Boolean }
+        .orEmpty()
+        .map { it.key as String }

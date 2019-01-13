@@ -4,6 +4,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.QuerySnapshot
+import de.borken.playgrounds.borkenplaygrounds.toStringList
 import java.io.Serializable
 
 class User(
@@ -32,7 +33,7 @@ class User(
             }
         }
 
-        fun createNewUser(androiD_ID: String, userCreated: UserCreated) {
+        fun createNewUser(android_ID: String, userCreated: UserCreated) {
 
             val settings = FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -42,7 +43,7 @@ class User(
 
             db.collection("users").add(
                 User.newUser(
-                    androiD_ID
+                    android_ID
                 )
             ).addOnSuccessListener { documentReference ->
 
@@ -58,11 +59,11 @@ class User(
             }
         }
 
-        private fun newUser(androiD_ID: String): MutableMap<String, Any> {
+        private fun newUser(android_ID: String): MutableMap<String, Any> {
 
             val user = mutableMapOf<String, Any>()
 
-            user["deviceId"] = androiD_ID
+            user["deviceId"] = android_ID
             user["visitedPlaygrounds"] = 0
             user["downVotedPlaygrounds"] = emptyMap<String, Boolean>()
             user["upVotedPlaygrounds"] = emptyMap<String, Boolean>()
@@ -76,25 +77,11 @@ class User(
             val deviceId = documentSnapshot.getString("deviceId")
             val visitedPlaygrounds = documentSnapshot.getLong("visitedPlaygrounds")
 
-            val _downVotedPlaygrounds = documentSnapshot.get("downVotedPlaygrounds") as? Map<*, *>
+            val downVotedPlaygrounds = (documentSnapshot.get("downVotedPlaygrounds") as? Map<*, *>).toStringList
 
-            val _upVotedPlaygrounds = documentSnapshot.get("upVotedPlaygrounds") as? Map<*, *>
+            val upVotedPlaygrounds = (documentSnapshot.get("upVotedPlaygrounds") as? Map<*, *>).toStringList
 
-            val _userRemarks = documentSnapshot.get("userRemarks") as? Map<*, *>
-
-
-            val downVotedPlaygrounds =
-                _downVotedPlaygrounds?.filter { it.value is Boolean && it.key is String && it.value as Boolean }
-                    .orEmpty()
-                    .map { it.key as String }
-            val upVotedPlaygrounds =
-                _upVotedPlaygrounds?.filter { it.value is Boolean && it.key is String && it.value as Boolean }
-                    .orEmpty()
-                    .map { it.key as String }
-            val userRemarks =
-                _userRemarks?.filter { it.value is Boolean && it.key is String && it.value as Boolean }
-                    .orEmpty()
-                    .map { it.key as String }
+            val userRemarks = (documentSnapshot.get("userRemarks") as? Map<*, *>).toStringList
 
             return if (!deviceId.isNullOrEmpty() && visitedPlaygrounds !== null)
                 User(
@@ -106,7 +93,7 @@ class User(
         }
     }
 
-    var mUserRemarks: MutableList<String> = mutableListOf()
+    private var mUserRemarks: MutableList<String> = mutableListOf()
 
     var mUpVotedPlaygrounds: MutableList<String> = mutableListOf()
 
