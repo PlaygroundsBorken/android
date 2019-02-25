@@ -39,6 +39,11 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
         filterButton.setOnClickListener {
 
             PlaygroundElementListDialogFragment.newInstance(selectedElements.orEmpty()).show(supportFragmentManager, "dialog")
+            //AvatarViewDialog.newInstance().show(supportFragmentManager, "dialog")
+            /*VisitedPlaygroundsNotifications().showNotification(
+                1,
+                this
+            )*/
         }
     }
 

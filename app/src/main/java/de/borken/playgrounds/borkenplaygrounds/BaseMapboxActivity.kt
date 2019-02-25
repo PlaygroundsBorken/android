@@ -3,6 +3,7 @@ package de.borken.playgrounds.borkenplaygrounds
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -24,6 +25,7 @@ import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.geometry.LatLngBounds
+import com.mapbox.mapboxsdk.location.LocationComponentOptions
 import com.mapbox.mapboxsdk.location.modes.CameraMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
@@ -41,6 +43,7 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
     private var permissionsManager: PermissionsManager? = null
     private var map: MapboxMap? = null
     private val markerToPlayground: MutableMap<Long, Playground> = mutableMapOf()
+    private val playgroundsOnMap = mutableSetOf<Playground>()
     private val loadedPlaygrounds = mutableListOf<Playground>()
     protected val CODE_AUTOCOMPLETE = 1
     protected lateinit var autocompleteLocation: List<CarmenFeature>
@@ -93,21 +96,38 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
         val icon = IconFactory.getInstance(this).fromBitmap(bitmap)
 
         val builder = LatLngBounds.Builder()
-        playgrounds.forEach {
+
+        val filteredPlaygrounds = playgrounds.filter { it !in playgroundsOnMap }
+        filteredPlaygrounds.forEach {
+
             val latLng = LatLng(
                 it.location.latitude(),
                 it.location.longitude()
             )
+
             val addMarker = mapboxMap.addMarker(
                 MarkerOptions().position(
                     latLng
                 ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
             )
 
-            builder.include(latLng)
-
-            this.markerToPlayground[addMarker.id] = it
+            if (!this.markerToPlayground.values.contains(it)) {
+                this.markerToPlayground[addMarker.id] = it
+            }
+            this.playgroundsOnMap.add(it)
         }
+
+        playgrounds.forEach {
+            val latLng = LatLng(
+                it.location.latitude(),
+                it.location.longitude()
+            )
+
+            builder.include(latLng)
+        }
+
+        playgroundsOnMap.clear()
+        playgroundsOnMap.addAll(playgrounds)
 
         if (playgrounds.size == 1) {
             val location = playgrounds.first().location
@@ -121,7 +141,8 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
 
         val selectedPlaygroundElementIds = selectedPlaygroundElements.map { it.id }
         var activeMarkerToPlayground = markerToPlayground.mapNotNull { (id, playground) ->
-            val containsPlaygroundElement = playground.mPlaygroundElements.any { it in selectedPlaygroundElementIds }
+            val containsPlaygroundElement = selectedPlaygroundElementIds.all { it in playground.mPlaygroundElements }
+
             if (containsPlaygroundElement) {
                 Pair(id, playground)
             } else {
@@ -133,11 +154,9 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
             activeMarkerToPlayground = markerToPlayground
         }
 
-        map?.markers?.forEach {
+        map?.markers?.filter { !activeMarkerToPlayground.keys.contains(it.id) }?.forEach {
 
-            if (it.id !in activeMarkerToPlayground.keys) {
-                map?.removeMarker(it)
-            }
+            map?.removeMarker(it)
         }
 
         if (map != null)
@@ -160,10 +179,6 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
 
                         loadedPlaygrounds.add(it)
 
-                        if (map != null) {
-                            addMarkersToMap(map!!, loadedPlaygrounds)
-                        }
-
                         CarmenFeature.builder().text(it.name)
                             .placeName(it.name)
                             .geometry(it.location)
@@ -171,6 +186,10 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
                             .properties(JsonObject())
                             .build()
                     }.orEmpty()
+
+                    if (map != null) {
+                        addMarkersToMap(map!!, loadedPlaygrounds)
+                    }
                 }
             }
     }
@@ -211,9 +230,20 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
         // Check if permissions are enabled and if not request
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             // Activate the MapboxMap LocationComponent to show user location
+
+
             // Adding in LocationComponentOptions is also an optional parameter
+            val options = LocationComponentOptions.builder(this)
+                .elevation(5F)
+                .accuracyAlpha(.6f)
+                .accuracyColor(Color.RED)
+                .foregroundDrawable(R.drawable.avataaars)
+                .build()
+
             val locationComponent = map?.locationComponent
-            locationComponent?.activateLocationComponent(this)
+
+
+            locationComponent?.activateLocationComponent(this, options)
             locationComponent?.isLocationComponentEnabled = true
             // Set the component's camera mode
             locationComponent?.cameraMode = CameraMode.TRACKING

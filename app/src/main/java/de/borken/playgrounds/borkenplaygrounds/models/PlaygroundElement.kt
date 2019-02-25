@@ -9,7 +9,32 @@ class PlaygroundElement(
     val name: String,
     val image: String,
     var selected: Boolean = false
-) : Serializable
+) : Serializable, Comparable<PlaygroundElement> {
+
+    override fun compareTo(other: PlaygroundElement): Int {
+        return if (this.id == other.id) {
+            0
+        } else {
+            -1
+        }
+    }
+
+    override fun hashCode(): Int {
+
+        return id.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PlaygroundElement
+
+        if (id != other.id) return false
+
+        return true
+    }
+}
 
 
 fun tryParsePlaygroundElements(result: QuerySnapshot?): List<PlaygroundElement> {

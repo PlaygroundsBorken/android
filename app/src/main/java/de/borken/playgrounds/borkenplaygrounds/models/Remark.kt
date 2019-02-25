@@ -73,6 +73,21 @@ class Remark(
 
             return remarks.orEmpty()
         }
+
+        fun newRemark(documentId: String?, id: String?, toString: String): MutableMap<String, Any>? {
+
+            if (documentId == null || id == null) {
+                return null
+            }
+
+            val remark = mutableMapOf<String, Any>()
+            remark["__typename"] = "UserRemark"
+            remark["remarkedPlayground"] = id
+            remark["remarkee"] = documentId
+            remark["text"] = toString
+
+            return remark
+        }
     }
 
     private lateinit var mRemarkee: String

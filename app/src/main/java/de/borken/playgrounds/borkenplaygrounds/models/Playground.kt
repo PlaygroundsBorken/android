@@ -18,7 +18,19 @@ class Playground(
     val upVotes: Int = 0,
     val downVotes: Int = 0,
     val description2: String? = ""
-) : Serializable {
+) : Serializable, Comparable<Playground> {
+
+    override fun compareTo(other: Playground): Int {
+        return if (this.id == other.id) {
+            0
+        } else {
+            -1
+        }
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 
     fun loadPlaygroundElements(listener: PlaygroundElementsListener) {
         val settings = FirebaseFirestoreSettings.Builder()
@@ -113,6 +125,17 @@ class Playground(
 
         this.mPlaygroundElements = playgroundElements
         return this
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Playground
+
+        if (id != other.id) return false
+
+        return true
     }
 }
 
