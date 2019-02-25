@@ -24,14 +24,9 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings
 import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.animation.ZoomAnimator
 import de.borken.playgrounds.borkenplaygrounds.glide.PlaygroundSliderView
-import de.borken.playgrounds.borkenplaygrounds.models.Playground
-import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
-import de.borken.playgrounds.borkenplaygrounds.models.Remark
-import de.borken.playgrounds.borkenplaygrounds.models.VisitedPlaygroundsNotifications
+import de.borken.playgrounds.borkenplaygrounds.models.*
 import de.borken.playgrounds.borkenplaygrounds.playgroundApp
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
-
-
 
 
 /**
@@ -67,24 +62,103 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
     private var fusedLocationClient: FusedLocationProviderClient? = null
 
-    @SuppressLint("MissingPermission")
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         this.playground = arguments?.getSerializable("PLAYGROUND_LIST") as? Playground
 
         playground_name.text = playground?.name
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            playground_description.text =
-                Html.fromHtml(playground?.description.orEmpty(), Html.FROM_HTML_MODE_COMPACT)
-        } else {
-            playground_description.text = Html.fromHtml(playground?.description.orEmpty())
+        setPlaygroundDescription()
+
+        setPlaygroundRating()
+
+        setPlaygroundImages(view)
+
+        playground?.loadPlaygroundElements(this)
+
+        val activeUser = context?.applicationContext?.playgroundApp?.activeUser
+
+        setupUpVotingButton(activeUser)
+
+        setupDownVotingButton(activeUser)
+
+        playground_remarks.setOnClickListener {
+            remarksClickHandler(view)
         }
 
-        if (playground?.rating?.toFloat() !== null)
-            playground_rating.rating = playground!!.rating!!.toFloat()
+        //val mBehavior = BottomSheetBehavior.from(list)
+        setupGeoFencing(activeUser)
+    }
+
+    private fun setupDownVotingButton(activeUser: User?) {
+        val downVotedPlaygrounds = activeUser?.mDownVotedPlaygrounds
 
 
+        val isDownVoted = downVotedPlaygrounds?.contains(playground?.id)
+        if (isDownVoted != null && isDownVoted) {
+
+            downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
+        }
+
+        downvote.setOnClickListener {
+            voteClickHandler(false)
+        }
+    }
+
+    private fun setupUpVotingButton(activeUser: User?) {
+        val upVotedPlaygrounds = activeUser?.mUpVotedPlaygrounds
+        val isUpVoted = upVotedPlaygrounds?.contains(playground?.id)
+        if (isUpVoted != null && isUpVoted) {
+
+            upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
+        }
+        upvote.setOnClickListener {
+            voteClickHandler(true)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun setupGeoFencing(activeUser: User?) {
+        if (activity != null)
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity!!)
+
+        if (fusedLocationClient != null) {
+
+            fusedLocationClient!!.lastLocation
+                .addOnSuccessListener { location: Location? ->
+
+                    val playgroundLocation = Location("point B")
+                    playgroundLocation.latitude = playground?.location?.latitude() ?: 0.0
+                    playgroundLocation.longitude = playground?.location?.longitude() ?: 0.0
+
+                    val distance = location?.distanceTo(playgroundLocation)
+
+                    if (distance === null || distance < 100) {
+                        return@addOnSuccessListener
+                    }
+
+                    playground_button_container.visibility = VISIBLE
+
+                    val playgroundAlreadyVisited = activeUser?.mVisitedPlaygrounds?.contains(playground?.id)
+                    if (playgroundAlreadyVisited === null || playgroundAlreadyVisited || playground !== null) {
+                        return@addOnSuccessListener
+                    }
+
+                    activeUser.mVisitedPlaygrounds.add(playground!!.id)
+
+                    activeUser.update()
+                    if (activity !== null) {
+                        VisitedPlaygroundsNotifications().showNotification(
+                            activeUser.mVisitedPlaygrounds.count(),
+                            activity!!
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun setPlaygroundImages(view: View) {
         playground?.images.orEmpty().forEach { image ->
 
             val sliderView = PlaygroundSliderView(view.context)
@@ -110,72 +184,19 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
         playground_images_slider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
         playground_images_slider.setDuration(10000)
+    }
 
-        playground?.loadPlaygroundElements(this)
+    private fun setPlaygroundRating() {
+        if (playground?.rating?.toFloat() !== null)
+            playground_rating.rating = playground!!.rating!!.toFloat()
+    }
 
-        val activeUser = context?.applicationContext?.playgroundApp?.activeUser
-        val upVotedPlaygrounds = activeUser?.mUpVotedPlaygrounds
-        val downVotedPlaygrounds = activeUser?.mDownVotedPlaygrounds
-
-        val isUpVoted = upVotedPlaygrounds?.contains(playground?.id)
-        val isDownVoted = downVotedPlaygrounds?.contains(playground?.id)
-
-        if (isUpVoted != null && isUpVoted) {
-
-            upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
-        }
-
-        if (isDownVoted != null && isDownVoted) {
-
-            downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
-        }
-
-        upvote.setOnClickListener {
-            voteClickHandler(true)
-        }
-
-        downvote.setOnClickListener {
-            voteClickHandler(false)
-        }
-
-        playground_remarks.setOnClickListener {
-            remarksClickHandler(view)
-        }
-
-        //val mBehavior = BottomSheetBehavior.from(list)
-        if (activity != null)
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity!!)
-
-        if (fusedLocationClient != null) {
-
-            fusedLocationClient!!.lastLocation
-                .addOnSuccessListener { location: Location? ->
-
-                    val playgroundLocation = Location("point B")
-                    playgroundLocation.latitude = playground?.location?.latitude() ?: 0.0
-                    playgroundLocation.longitude = playground?.location?.longitude() ?: 0.0
-
-                    val distance = location?.distanceTo(playgroundLocation)
-
-                    if (distance !== null && distance < 100) {
-
-                        playground_button_container.visibility = VISIBLE
-
-                        val playgroundAlreadyVisited = activeUser?.mVisitedPlaygrounds?.contains(playground?.id)
-                        if (playgroundAlreadyVisited !== null && !playgroundAlreadyVisited && playground !== null) {
-
-                            activeUser.mVisitedPlaygrounds.add(playground!!.id)
-
-                            activeUser.update()
-                            if (activity !== null) {
-                                VisitedPlaygroundsNotifications().showNotification(
-                                    activeUser.mVisitedPlaygrounds.count(),
-                                    activity!!
-                                )
-                            }
-                        }
-                    }
-                }
+    private fun setPlaygroundDescription() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            playground_description.text =
+                Html.fromHtml(playground?.description.orEmpty(), Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            playground_description.text = Html.fromHtml(playground?.description.orEmpty())
         }
     }
 
@@ -211,8 +232,10 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         val input = EditText(view.context)
         val container = FrameLayout(view.context)
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        params.leftMargin = resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
-        params.rightMargin = resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
+        params.leftMargin =
+            resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
+        params.rightMargin =
+            resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
         input.layoutParams = params
         input.inputType = InputType.TYPE_CLASS_TEXT
         container.addView(input)
