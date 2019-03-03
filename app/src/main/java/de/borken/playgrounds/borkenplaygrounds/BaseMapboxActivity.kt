@@ -1,46 +1,50 @@
 package de.borken.playgrounds.borkenplaygrounds
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.widget.Toast
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.gson.JsonObject
-import com.mapbox.android.core.permissions.PermissionsListener
-import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.api.geocoding.v5.models.CarmenFeature
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.annotations.IconFactory
+import com.mapbox.mapboxsdk.annotations.Marker
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.geometry.LatLngBounds
-import com.mapbox.mapboxsdk.location.LocationComponentOptions
-import com.mapbox.mapboxsdk.location.modes.CameraMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.localization.MapLocale
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
+import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import kotlinx.android.synthetic.main.activity_playground.*
 
-open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
+open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
-    private var originLocation: Location? = null
-    private var permissionsManager: PermissionsManager? = null
+    private var meMarker: Marker? = null
     private var map: MapboxMap? = null
     private val markerToPlayground: MutableMap<Long, Playground> = mutableMapOf()
     private val playgroundsOnMap = mutableSetOf<Playground>()
@@ -53,20 +57,23 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
         onCreate(savedInstanceState)
     }
 
+    private lateinit var locationManager: LocationManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playground)
 
-        Mapbox.getInstance(this, getString(R.string.access_token))
+        val accessToken = this.applicationContext.fetchMapboxAccessToken
+        val mapboxUrl = this.applicationContext.fetchMapboxUrl
+        Mapbox.getInstance(this, accessToken)
         mapView.onCreate(savedInstanceState)
-        mapView.setStyleUrl(getString(R.string.MAPBOX_STYLE))
+        mapView.setStyleUrl(mapboxUrl)
         mapView.getMapAsync { mapboxMap ->
             map = mapboxMap
 
             if (loadedPlaygrounds.isNotEmpty())
                 addMarkersToMap(mapboxMap, loadedPlaygrounds)
 
-            enableLocationComponent()
             mapboxMap.setOnMarkerClickListener {
 
                 val playground = this.markerToPlayground[it.id]
@@ -89,6 +96,30 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
         }
 
         initLocations()
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        requestLocation()
+    }
+
+    private fun requestLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+
+            val provider = getAvailableProvider()
+            if (provider != null) {
+                locationManager.requestLocationUpdates(provider, 0, 0f, this)
+            } else {
+                val locationProvider: String = LocationManager.GPS_PROVIDER
+
+                try {
+                    val lastKnownLocation: Location = locationManager.getLastKnownLocation(locationProvider)
+                    makeUseOfNewLocation(lastKnownLocation)
+                } catch (exception: IllegalStateException) {
+
+                }
+            }
+        }
     }
 
     private fun addMarkersToMap(mapboxMap: MapboxMap, playgrounds: List<Playground>) {
@@ -194,7 +225,6 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
             }
     }
 
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -224,51 +254,70 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
         }
     }
 
+    private fun getAvailableProvider(): String? {
 
-    @SuppressLint("MissingPermission")
-    private fun enableLocationComponent() {
-        // Check if permissions are enabled and if not request
-        if (PermissionsManager.areLocationPermissionsGranted(this)) {
-            // Activate the MapboxMap LocationComponent to show user location
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
+        // getting GPS status
+        val isGPSEnabled = locationManager
+            .isProviderEnabled(LocationManager.GPS_PROVIDER)
 
-            // Adding in LocationComponentOptions is also an optional parameter
-            val options = LocationComponentOptions.builder(this)
-                .elevation(5F)
-                .accuracyAlpha(.6f)
-                .accuracyColor(Color.RED)
-                .foregroundDrawable(R.drawable.avataaars)
-                .build()
+        if (isGPSEnabled) {
 
-            val locationComponent = map?.locationComponent
-
-
-            locationComponent?.activateLocationComponent(this, options)
-            locationComponent?.isLocationComponentEnabled = true
-            // Set the component's camera mode
-            locationComponent?.cameraMode = CameraMode.TRACKING
-            originLocation = locationComponent?.lastKnownLocation
-
-        } else {
-            permissionsManager = PermissionsManager(this)
-            permissionsManager!!.requestLocationPermissions(this)
+            return LocationManager.GPS_PROVIDER
         }
-    }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        // getting network status
+        val isNetworkEnabled = locationManager
+            .isProviderEnabled(LocationManager.NETWORK_PROVIDER)
 
-        permissionsManager?.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
+        if (isNetworkEnabled) {
 
-    override fun onExplanationNeeded(permissionsToExplain: MutableList<String>?) {
-
-        Toast.makeText(this, R.string.user_location_permission_explanation, Toast.LENGTH_LONG).show()
-    }
-
-    override fun onPermissionResult(granted: Boolean) {
-        if (granted) {
-            enableLocationComponent()
+            return LocationManager.NETWORK_PROVIDER
         }
+
+        return null
+    }
+
+    private fun makeUseOfNewLocation(location: Location) {
+
+        val activeUser = this.applicationContext.playgroundApp.activeUser
+        var avatarURL = AvatarViewDialog.getDefaultAvatarURL()
+        if (activeUser?.avatarURL !== null) {
+            avatarURL = activeUser.avatarURL
+        }
+
+        Glide.with(this /* context */)
+            .asBitmap()
+            .load(avatarURL)
+            .into<SimpleTarget<Bitmap>>(object: SimpleTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+
+                    val icon = IconFactory.getInstance(this@BaseMapboxActivity).fromBitmap(resource)
+
+                    if (meMarker !== null)
+                        map?.removeMarker(meMarker!!)
+
+                    meMarker = map?.addMarker(
+                        MarkerOptions().position(
+                            LatLng(location.latitude, location.longitude)
+                        ).icon(icon)
+                    )
+
+                    val builder = LatLngBounds.Builder()
+                    this@BaseMapboxActivity.playgroundsOnMap.forEach {
+                        val latLng = LatLng(
+                            it.location.latitude(),
+                            it.location.longitude()
+                        )
+
+                        builder.include(latLng)
+                    }
+
+                    builder.include(LatLng(location.latitude, location.longitude))
+                    map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
+                }
+            })
     }
 
     public override fun onStart() {
@@ -279,6 +328,7 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
     public override fun onResume() {
         super.onResume()
         mapView?.onResume()
+        requestLocation()
     }
 
     public override fun onPause() {
@@ -299,10 +349,29 @@ open class BaseMapboxActivity : AppCompatActivity(), PermissionsListener {
     override fun onDestroy() {
         super.onDestroy()
         mapView?.onDestroy()
+
+        locationManager.removeUpdates(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         mapView?.onSaveInstanceState(outState)
+    }
+
+
+    override fun onLocationChanged(location: Location?) {
+
+        if (location !== null) {
+            makeUseOfNewLocation(location)
+        }
+    }
+
+    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {
+    }
+
+    override fun onProviderEnabled(p0: String?) {
+    }
+
+    override fun onProviderDisabled(p0: String?) {
     }
 }

@@ -1,75 +1,39 @@
-<android.support.constraint.ConstraintLayout
+<LinearLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res/de.borken.playgrounds.borkenplaygrounds"
         xmlns:app2="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" android:id="@+id/frameLayout2">
+        android:layout_height="match_parent" android:id="@+id/frameLayout2" android:orientation="vertical">
 
     <ImageView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content" tools:srcCompat="@tools:sample/avatars" android:id="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/avatarImageView"
+            android:layout_marginLeft="8dp" android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" android:layout_marginRight="8dp" android:layout_weight="3"/>
 
-    <Spinner
+    <ScrollView
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/spinner"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/Accessories"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/HairColor"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/FacialHair"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/Clothes"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/ColorFabric"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
-    <Spinner
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/Eyes"
-            android:layout_marginTop="8dp" app2:layout_constraintTop_toBottomOf="@+id/imageView2"
-            app2:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp" android:spinnerMode="dropdown" android:entries="@array/top"/>
+            android:id="@+id/avatarSettingsScrollView"
+            android:layout_height="0dp"
+            android:layout_weight="8">
 
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/avatarSettingsWrapper">
+
+        </LinearLayout>
+    </ScrollView>
     <Button
             android:text="Speichern"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/button" android:layout_marginTop="8dp"
-            app2:layout_constraintTop_toBottomOf="@+id/spinner" app2:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:id="@+id/generateAvatar" android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp" android:layout_marginRight="8dp"
-            app2:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp"/>
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp" style="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog"
+    />
 
 
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>

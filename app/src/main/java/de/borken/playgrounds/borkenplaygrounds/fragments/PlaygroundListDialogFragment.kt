@@ -8,6 +8,8 @@ import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
+import android.support.v4.app.FragmentActivity
+import android.support.v4.app.FragmentManager
 import android.text.Html
 import android.text.InputType
 import android.view.LayoutInflater
@@ -21,10 +23,15 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.tapadoo.alerter.Alerter
 import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.animation.ZoomAnimator
+import de.borken.playgrounds.borkenplaygrounds.fetchPlaygroundNotifications
 import de.borken.playgrounds.borkenplaygrounds.glide.PlaygroundSliderView
-import de.borken.playgrounds.borkenplaygrounds.models.*
+import de.borken.playgrounds.borkenplaygrounds.models.Playground
+import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
+import de.borken.playgrounds.borkenplaygrounds.models.Remark
+import de.borken.playgrounds.borkenplaygrounds.models.User
 import de.borken.playgrounds.borkenplaygrounds.playgroundApp
 import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 
@@ -87,7 +94,6 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
             remarksClickHandler(view)
         }
 
-        //val mBehavior = BottomSheetBehavior.from(list)
         setupGeoFencing(activeUser)
     }
 
@@ -149,12 +155,42 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
                     activeUser.update()
                     if (activity !== null) {
-                        VisitedPlaygroundsNotifications().showNotification(
+
+                        showNotificationAlert(
                             activeUser.mVisitedPlaygrounds.count(),
-                            activity!!
+                            activity!!,
+                            fragmentManager
                         )
                     }
                 }
+        }
+    }
+
+    private fun showNotificationAlert(count: Int, activity: FragmentActivity, fragmentManager: FragmentManager?) {
+
+        val notifications = context?.applicationContext?.fetchPlaygroundNotifications
+
+        try {
+            val notification = notifications?.visitedPlaygroundsNotifications?.first { it.visitedPlaygrounds == count }
+
+            if (notification !== null) {
+
+                Alerter.create(activity)
+                    .setTitle(notification.title)
+                    .setText(notification.text)
+                    .setDuration(10000)
+                    .enableSwipeToDismiss()
+                    .addButton(
+                        "Avatar ändern",
+                        R.style.AlertButton,
+                        View.OnClickListener {
+                            AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                        }
+                    )
+                    .show()
+            }
+        } catch (exception: NoSuchElementException) {
+
         }
     }
 

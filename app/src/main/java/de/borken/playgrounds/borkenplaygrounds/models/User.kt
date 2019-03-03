@@ -4,12 +4,14 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.QuerySnapshot
+import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.toStringList
 import java.io.Serializable
 
 class User(
     val documentId: String,
-    val deviceId: String
+    val deviceId: String,
+    var avatarURL: String
 
 ) : Serializable {
 
@@ -32,6 +34,7 @@ class User(
         document.update("downVotedPlaygrounds", this.mDownVotedPlaygrounds.map { mapOf(Pair(it, true)) })
         document.update("upVotedPlaygrounds", this.mUpVotedPlaygrounds.map { mapOf(Pair(it, true)) })
         document.update("userRemarks", this.mUserRemarks)
+        document.update("avatarURL", avatarURL)
     }
 
     companion object {
@@ -84,6 +87,7 @@ class User(
             user["downVotedPlaygrounds"] = emptyMap<String, Boolean>()
             user["upVotedPlaygrounds"] = emptyMap<String, Boolean>()
             user["userRemarks"] = emptyMap<String, Boolean>()
+            user["avatarURL"] = AvatarViewDialog.getDefaultAvatarURL()
 
             return user
         }
@@ -96,11 +100,15 @@ class User(
             val downVotedPlaygrounds = (documentSnapshot.get("downVotedPlaygrounds") as? ArrayList<*>)?.flatMap { (it as? Map<*,*>).toStringList }.orEmpty()
             val upVotedPlaygrounds = (documentSnapshot.get("upVotedPlaygrounds") as? ArrayList<*>)?.flatMap { (it as? Map<*,*>).toStringList }.orEmpty()
             val userRemarks = (documentSnapshot.get("userRemarks") as? Map<*, *>).toStringList
+            var avatarURL = documentSnapshot.getString("avatarURL")
+            if (avatarURL == null)
+                avatarURL = AvatarViewDialog.getDefaultAvatarURL()
 
             return if (!deviceId.isNullOrEmpty())
                 User(
                     documentSnapshot.id,
-                    deviceId
+                    deviceId,
+                    avatarURL
                 ).setLists(downVotedPlaygrounds, upVotedPlaygrounds, userRemarks, visitedPlaygrounds)
             else
                 null

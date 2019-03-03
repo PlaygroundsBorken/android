@@ -1,0 +1,10 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Preference android:title="Software-Lizenzen">
+
+    </Preference>
+    <Preference android:title="Datenschutzerklärung">
+
+    </Preference>
+
+</PreferenceScreen>

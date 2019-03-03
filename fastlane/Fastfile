@@ -1,5 +1,6 @@
 # Customise this file, documentation can be found here:
-# https://github.com/fastlane/fastlane/tree/master/fastlane/docs
+# 2
+
 # All available actions: https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Actions.md
 # can also be listed using the `fastlane actions` command
 
@@ -27,8 +28,8 @@ platform :android do
 
   desc "Submit a new Beta Build to Crashlytics Beta"
   lane :beta do
-    gradle(task: "assembleRelease")
-    crashlytics
+    gradle(task: 'assemble', build_type: 'Release')
+    upload_to_play_store(track: 'beta')
 
     # sh "your_script.sh"
     # You can also use other beta testing services here

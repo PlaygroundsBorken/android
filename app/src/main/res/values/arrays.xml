@@ -1,6 +1,260 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="top">
+    <string-array name="topType">
+        <item>NoHair</item>
+        <item>Eyepatch</item>
+        <item>Hat</item>
+        <item>Hijab</item>
+        <item>Turban</item>
+        <item>WinterHat1</item>
+        <item>WinterHat2</item>
+        <item>WinterHat3</item>
+        <item>WinterHat4</item>
+        <item>LongHairBigHair</item>
+        <item>LongHairBob</item>
+        <item>LongHairBun</item>
+        <item>LongHairCurly</item>
+        <item>LongHairCurvy</item>
+        <item>LongHairDreads</item>
+        <item>LongHairFrida</item>
+        <item>LongHairFro</item>
+        <item>LongHairFroBand</item>
+        <item>LongHairNotTooLong</item>
+        <item>LongHairShavedSides</item>
+        <item>LongHairMiaWallace</item>
+        <item>LongHairStraight</item>
+        <item>LongHairStraight2</item>
+        <item>LongHairStraightStrand</item>
+        <item>ShortHairDreads01</item>
+        <item>ShortHairDreads02</item>
+        <item>ShortHairFrizzle</item>
+        <item>ShortHairShaggyMullet</item>
+        <item>ShortHairShortCurly</item>
+        <item>ShortHairShortFlat</item>
+        <item>ShortHairShortRound</item>
         <item>ShortHairShortWaved</item>
+        <item>ShortHairSides</item>
+        <item>ShortHairTheCaesar</item>
+        <item>ShortHairTheCaesarSidePart</item>
+    </string-array>
+    <string-array name="accessoriesType">
+        <item>Blank</item>
+        <item>Kurt</item>
+        <item>Prescription01</item>
+        <item>Prescription02</item>
+        <item>Round</item>
+        <item>Sunglasses</item>
+        <item>Wayfarers</item>
+    </string-array>
+    <string-array name="hairColor">
+        <item>Auburn</item>
+        <item>Black</item>
+        <item>Blonde</item>
+        <item>BlondeGolden</item>
+        <item>Brown</item>
+        <item>BrownDark</item>
+        <item>PastelPink</item>
+        <item>Platinum</item>
+        <item>Red</item>
+        <item>SilverGray</item>
+    </string-array>
+    <string-array name="facialHairType">
+        <item>Blank</item>
+        <item>BeardMedium</item>
+        <item>BeardLight</item>
+        <item>BeardMagestic</item>
+        <item>MoustacheFancy</item>
+        <item>MoustacheMagnum</item>
+    </string-array>
+    <string-array name="clotheType">
+        <item>BlazerShirt</item>
+        <item>BlazerSweater</item>
+        <item>CollarSweater</item>
+        <item>GraphicShirt</item>
+        <item>Hoodie</item>
+        <item>Overall</item>
+        <item>ShirtCrewNeck</item>
+        <item>ShirtScoopNeck</item>
+        <item>ShirtVNeck</item>
+    </string-array>
+    <string-array name="eyeType">
+        <item>Close</item>
+        <item>Cry</item>
+        <item>Default</item>
+        <item>Dizzy</item>
+        <item>EyeRoll</item>
+        <item>Happy</item>
+        <item>Hearts</item>
+        <item>Side</item>
+        <item>Squint</item>
+        <item>Surprised</item>
+        <item>Wink</item>
+        <item>WinkWacky</item>
+    </string-array>
+    <string-array name="eyebrowType">
+        <item>Angry</item>
+        <item>AngryNatural</item>
+        <item>Default</item>
+        <item>DefaultNatural</item>
+        <item>FlatNatural</item>
+        <item>RaisedExcited</item>
+        <item>RaisedExcitedNatural</item>
+        <item>SadConcerned</item>
+        <item>SadConcernedNatural</item>
+        <item>UnibrowNatural</item>
+        <item>UpDown</item>
+        <item>UpDownNatural</item>
+    </string-array>
+    <string-array name="mouthType">
+        <item>Concerned</item>
+        <item>Default</item>
+        <item>Disbelief</item>
+        <item>Eating</item>
+        <item>Grimace</item>
+        <item>Sad</item>
+        <item>ScreamOpen</item>
+        <item>Serious</item>
+        <item>Smile</item>
+        <item>Tongue</item>
+        <item>Twinkle</item>
+        <item>Vomit</item>
+    </string-array>
+    <string-array name="skinColor">
+        <item>Tanned</item>
+        <item>Yellow</item>
+        <item>Pale</item>
+        <item>Light</item>
+        <item>Brown</item>
+        <item>DarkBrown</item>
+        <item>Black</item>
+    </string-array>
+
+    <string-array name="topTypeTitle">
+        <item>NoHair</item>
+        <item>Eyepatch</item>
+        <item>Hat</item>
+        <item>Hijab</item>
+        <item>Turban</item>
+        <item>WinterHat1</item>
+        <item>WinterHat2</item>
+        <item>WinterHat3</item>
+        <item>WinterHat4</item>
+        <item>LongHairBigHair</item>
+        <item>LongHairBob</item>
+        <item>LongHairBun</item>
+        <item>LongHairCurly</item>
+        <item>LongHairCurvy</item>
+        <item>LongHairDreads</item>
+        <item>LongHairFrida</item>
+        <item>LongHairFro</item>
+        <item>LongHairFroBand</item>
+        <item>LongHairNotTooLong</item>
+        <item>LongHairShavedSides</item>
+        <item>LongHairMiaWallace</item>
+        <item>LongHairStraight</item>
+        <item>LongHairStraight2</item>
+        <item>LongHairStraightStrand</item>
+        <item>ShortHairDreads01</item>
+        <item>ShortHairDreads02</item>
+        <item>ShortHairFrizzle</item>
+        <item>ShortHairShaggyMullet</item>
+        <item>ShortHairShortCurly</item>
+        <item>ShortHairShortFlat</item>
+        <item>ShortHairShortRound</item>
+        <item>ShortHairShortWaved</item>
+        <item>ShortHairSides</item>
+        <item>ShortHairTheCaesar</item>
+        <item>ShortHairTheCaesarSidePart</item>
+    </string-array>
+    <string-array name="accessoriesTypeTitle">
+        <item>Blank</item>
+        <item>Kurt</item>
+        <item>Prescription01</item>
+        <item>Prescription02</item>
+        <item>Round</item>
+        <item>Sunglasses</item>
+        <item>Wayfarers</item>
+    </string-array>
+    <string-array name="hairColorTitle">
+        <item>Auburn</item>
+        <item>Black</item>
+        <item>Blonde</item>
+        <item>BlondeGolden</item>
+        <item>Brown</item>
+        <item>BrownDark</item>
+        <item>PastelPink</item>
+        <item>Platinum</item>
+        <item>Red</item>
+        <item>SilverGray</item>
+    </string-array>
+    <string-array name="facialHairTypeTitle">
+        <item>Blank</item>
+        <item>BeardMedium</item>
+        <item>BeardLight</item>
+        <item>BeardMagestic</item>
+        <item>MoustacheFancy</item>
+        <item>MoustacheMagnum</item>
+    </string-array>
+    <string-array name="clotheTypeTitle">
+        <item>BlazerShirt</item>
+        <item>BlazerSweater</item>
+        <item>CollarSweater</item>
+        <item>GraphicShirt</item>
+        <item>Hoodie</item>
+        <item>Overall</item>
+        <item>ShirtCrewNeck</item>
+        <item>ShirtScoopNeck</item>
+        <item>ShirtVNeck</item>
+    </string-array>
+    <string-array name="eyeTypeTitle">
+        <item>Close</item>
+        <item>Cry</item>
+        <item>Default</item>
+        <item>Dizzy</item>
+        <item>EyeRoll</item>
+        <item>Happy</item>
+        <item>Hearts</item>
+        <item>Side</item>
+        <item>Squint</item>
+        <item>Surprised</item>
+        <item>Wink</item>
+        <item>WinkWacky</item>
+    </string-array>
+    <string-array name="eyebrowTypeTitle">
+        <item>Angry</item>
+        <item>AngryNatural</item>
+        <item>Default</item>
+        <item>DefaultNatural</item>
+        <item>FlatNatural</item>
+        <item>RaisedExcited</item>
+        <item>RaisedExcitedNatural</item>
+        <item>SadConcerned</item>
+        <item>SadConcernedNatural</item>
+        <item>UnibrowNatural</item>
+        <item>UpDown</item>
+        <item>UpDownNatural</item>
+    </string-array>
+    <string-array name="mouthTypeTitle">
+        <item>Concerned</item>
+        <item>Default</item>
+        <item>Disbelief</item>
+        <item>Eating</item>
+        <item>Grimace</item>
+        <item>Sad</item>
+        <item>ScreamOpen</item>
+        <item>Serious</item>
+        <item>Smile</item>
+        <item>Tongue</item>
+        <item>Twinkle</item>
+        <item>Vomit</item>
+    </string-array>
+    <string-array name="skinColorTitle">
+        <item>Tanned</item>
+        <item>Yellow</item>
+        <item>Pale</item>
+        <item>Light</item>
+        <item>Brown</item>
+        <item>DarkBrown</item>
+        <item>Black</item>
     </string-array>
 </resources>

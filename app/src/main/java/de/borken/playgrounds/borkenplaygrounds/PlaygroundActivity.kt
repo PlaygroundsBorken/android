@@ -1,5 +1,6 @@
 package de.borken.playgrounds.borkenplaygrounds
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PersistableBundle
@@ -32,6 +33,12 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
         initSearchFab()
 
         initFilterFab()
+
+        moreButton.setOnClickListener {
+
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun initFilterFab() {
@@ -39,11 +46,6 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
         filterButton.setOnClickListener {
 
             PlaygroundElementListDialogFragment.newInstance(selectedElements.orEmpty()).show(supportFragmentManager, "dialog")
-            //AvatarViewDialog.newInstance().show(supportFragmentManager, "dialog")
-            /*VisitedPlaygroundsNotifications().showNotification(
-                1,
-                this
-            )*/
         }
     }
 
@@ -65,8 +67,9 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
             val options = placeOptions.build(PlaceOptions.MODE_CARDS)
 
+            val accessToken= this.applicationContext.fetchMapboxAccessToken
             val intent = PlaceAutocomplete.IntentBuilder()
-                .accessToken(getString(R.string.access_token))
+                .accessToken(accessToken)
                 .placeOptions(options)
                 .build(this)
             startActivityForResult(intent, CODE_AUTOCOMPLETE)

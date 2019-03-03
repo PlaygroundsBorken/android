@@ -1,28 +1,16 @@
 package de.borken.playgrounds.borkenplaygrounds.models
 
-import android.app.Activity
-import com.tapadoo.alerter.Alerter
+import com.google.gson.Gson
 
-class VisitedPlaygroundNotification(val title: String, val text: String)
+class VisitedPlaygroundNotification(val title: String, val text: String, val visitedPlaygrounds: Int)
 
-class VisitedPlaygroundsNotifications() {
+class VisitedPlaygroundsNotifications(val visitedPlaygroundsNotifications: List<VisitedPlaygroundNotification>) {
 
-    private val texts = mutableMapOf<Int, VisitedPlaygroundNotification>()
+    companion object {
 
-    init {
-        texts[1] = VisitedPlaygroundNotification("Dein erster Spielplatz!", "Klasse Du hast deinen ersten Spielplatz besucht! Weiter so!!!")
-    }
+        fun fromJson(jsonObject: String): VisitedPlaygroundsNotifications {
 
-
-    fun showNotification(visitedPlaygrounds: Int, activity: Activity) {
-
-        val playgroundNotification = texts[visitedPlaygrounds]
-
-        if (playgroundNotification !== null) {
-            Alerter.create(activity)
-                .setTitle(playgroundNotification.title)
-                .setText(playgroundNotification.text)
-                .show()
+            return Gson().fromJson(jsonObject, VisitedPlaygroundsNotifications::class.java)
         }
     }
 }
