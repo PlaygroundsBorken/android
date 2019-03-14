@@ -1,2 +1,2 @@
-json_key_file "" # Path to the json secret file - Follow https://github.com/fastlane/supply#setup to get one
+json_key_file "~/api-7480299217181441147-458462-c6e0cb1a9a0b.json" # Path to the json secret file - Follow https://github.com/fastlane/supply#setup to get one
 package_name "de.borken.playgrounds.borkenplaygrounds" # e.g. com.krausefx.app

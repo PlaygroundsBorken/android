@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1033947108559-rmnct35tb13ok71he1ml597bhp5qbg5c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.borken.playgrounds.borkenplaygrounds",
+            "certificate_hash": "c1cdfd75f0006b1af8a28374262603e858b1f8a1"
+          }
+        },
+        {
           "client_id": "1033947108559-2jcgaipvai26f6antkq7qnbuj5rb73lq.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,8 +37,20 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1033947108559-2jcgaipvai26f6antkq7qnbuj5rb73lq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1033947108559-29l590f2bn0tijsti6s6uk32gqlgom2j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "de.borken.playgrounds.borkenplaygrounds.Borken-Playgrounds"
+              }
+            }
+          ]
         },
         "ads_service": {
           "status": 2

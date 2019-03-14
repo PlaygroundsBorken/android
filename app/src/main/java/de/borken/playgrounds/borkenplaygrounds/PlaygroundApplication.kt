@@ -1,7 +1,7 @@
 package de.borken.playgrounds.borkenplaygrounds
 
-import android.app.Application
 import android.content.Context
+import android.support.multidex.MultiDexApplication
 import com.google.firebase.FirebaseApp
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
@@ -9,7 +9,7 @@ import de.borken.playgrounds.borkenplaygrounds.models.AvatarSettings
 import de.borken.playgrounds.borkenplaygrounds.models.User
 import de.borken.playgrounds.borkenplaygrounds.models.VisitedPlaygroundsNotifications
 
-class PlaygroundApplication : Application() {
+class PlaygroundApplication : MultiDexApplication() {
 
     var activeUser: User? = null
 
@@ -23,7 +23,6 @@ class PlaygroundApplication : Application() {
         remoteConfig = FirebaseRemoteConfig.getInstance()
 
         val configSettings = FirebaseRemoteConfigSettings.Builder()
-            .setDeveloperModeEnabled(BuildConfig.DEBUG)
             .build()
         remoteConfig.setConfigSettings(configSettings)
         remoteConfig.setDefaults(R.xml.remote_config_defaults)
@@ -46,13 +45,23 @@ class PlaygroundApplication : Application() {
         }
     }
 
+    fun fetchByString(name: String): String {
+
+        return this.remoteConfig.getString(name)
+    }
+
     companion object {
 
         // Remote Config keys
         const val MAPBOX_ACCESS_TOKEN = "access_token"
         const val MAPBOX_URL = "MAPBOX_STYLE"
         const val avatar_settings = "avatar_settings"
+        const val rules = "rules"
         const val playground_notifications = "playground_notifications"
+        const val impressum = "impressum"
+        const val privacyPolicy = "privacy_policy"
+
+
     }
 }
 
@@ -67,6 +76,9 @@ val Context.fetchMapboxAccessToken: String
 
 val Context.fetchMapboxUrl: String
     get() = getRemoteConfig.getString(PlaygroundApplication.MAPBOX_URL)
+
+val Context.fetchRules: String
+    get() = getRemoteConfig.getString(PlaygroundApplication.rules)
 
 val Context.fetchAvatarSettings: AvatarSettings
     get() = AvatarSettings.fromJson(getRemoteConfig.getString(PlaygroundApplication.avatar_settings))

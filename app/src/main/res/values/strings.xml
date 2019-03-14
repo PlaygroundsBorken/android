@@ -95,4 +95,9 @@
 
     <string name="pref_title_vibrate">Vibrate</string>
     <string name="pref_header_change_avatar">Avatar ändern</string>
+    <string name="title_location_permission">Standort einschalten</string>
+    <string name="text_location_permission">Damit Du sehen kannst wo Du bist musst Du deinen Standort aktivieren.
+    </string>
+    <string name="ok">Ok</string>
+    <string name="disabled_gps">disabled_gps</string>
 </resources>

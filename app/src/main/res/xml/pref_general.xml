@@ -4,4 +4,10 @@
         <intent android:action=""/>
     </Preference>
 
+    <SwitchPreference
+            android:key="gps_disabled"
+            android:title="Standorteinstellungen deaktiviert" />
+
+    <Preference android:key="sponsor" android:title="In Zusammenarbeit mit...">
+    </Preference>
 </PreferenceScreen>

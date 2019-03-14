@@ -43,6 +43,9 @@ class SplashScreen : AppCompatActivity(), User.UserCreated {
             contentResolver,
             Settings.Secure.ANDROID_ID
         )
+
+        rules.text = application.fetchRules
+
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
