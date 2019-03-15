@@ -228,11 +228,11 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
     }
 
     private fun setPlaygroundDescription() {
+        val description = playground?.description.orEmpty().replace("<li>", "<li>&nbsp;")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            playground_description.text =
-                Html.fromHtml(playground?.description.orEmpty(), Html.FROM_HTML_MODE_COMPACT)
+            playground_description.text = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT)
         } else {
-            playground_description.text = Html.fromHtml(playground?.description.orEmpty())
+            playground_description.text = Html.fromHtml(description)
         }
     }
 

@@ -72,8 +72,16 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playground)
 
-        val accessToken = this.applicationContext.fetchMapboxAccessToken
-        val mapboxUrl = this.applicationContext.fetchMapboxUrl
+        var accessToken = this.applicationContext.fetchMapboxAccessToken
+        if (accessToken.isEmpty()) {
+            accessToken = getString(R.string.access_token)
+        }
+
+        var mapboxUrl = this.applicationContext.fetchMapboxUrl
+        if (mapboxUrl.isEmpty()) {
+
+            mapboxUrl = getString(R.string.MAPBOX_STYLE)
+        }
         Mapbox.getInstance(this, accessToken)
         mapView.onCreate(savedInstanceState)
         mapView.setStyleUrl(mapboxUrl)

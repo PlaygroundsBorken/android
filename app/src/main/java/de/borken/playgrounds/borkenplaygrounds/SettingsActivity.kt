@@ -4,6 +4,7 @@ import android.annotation.TargetApi
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceActivity
@@ -112,13 +113,32 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             val sharedPref = activity.getPreferences(Context.MODE_PRIVATE)
             val disabledGPS = sharedPref.getBoolean(getString(R.string.disabled_gps), false)
 
-            switchPreference.isEnabled = !disabledGPS
+            switchPreference.isChecked = disabledGPS
+
+            switchPreference.setOnPreferenceChangeListener { preference, _ ->
+                with (sharedPref.edit()) {
+                    putBoolean(getString(de.borken.playgrounds.borkenplaygrounds.R.string.disabled_gps), (preference as SwitchPreference).isChecked)
+                    apply()
+                }
+                true
+            }
 
             val sponsor = findPreference("sponsor")
 
             sponsor.setOnPreferenceClickListener {
                 val viewIntent = Intent(activity, SponsorActivity::class.java)
                 startActivity(viewIntent)
+
+                true
+            }
+
+            val remarkLink = findPreference("remark_link")
+
+            remarkLink.setOnPreferenceClickListener {
+                val url = "https://www.borken.de/buergerservice/ideen-und-beschwerdemanagement/ideen-u-beschwerdemanagement.html"
+                val i = Intent(Intent.ACTION_VIEW)
+                i.data = Uri.parse(url)
+                startActivity(i)
 
                 true
             }
