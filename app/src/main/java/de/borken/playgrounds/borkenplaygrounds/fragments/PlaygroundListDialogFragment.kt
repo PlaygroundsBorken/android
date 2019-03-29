@@ -140,7 +140,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
                     val distance = location?.distanceTo(playgroundLocation)
 
-                    if (distance === null || distance < 100) {
+                    if (distance === null || distance > 250) {
                         return@addOnSuccessListener
                     }
 
@@ -228,7 +228,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
     }
 
     private fun setPlaygroundDescription() {
-        val description = playground?.description.orEmpty().replace("<li>", "<li>&nbsp;")
+        val description = playground?.description.orEmpty().replace("<li>", "&#8226;&nbsp;").replace("</li>", "<br/>")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             playground_description.text = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT)
         } else {

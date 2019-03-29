@@ -25,6 +25,11 @@
                   android:theme="@style/Theme.AppCompat.Light">
         </activity>
         <activity
+                android:name=".IntroActivity"
+                android:parentActivityName=".PlaygroundActivity"
+                android:theme="@style/Theme.AppCompat.Light">
+        </activity>
+        <activity
                 android:name=".SimpleWebView"
                 android:parentActivityName=".SettingsActivity"
                 android:theme="@style/Theme.AppCompat.Light">

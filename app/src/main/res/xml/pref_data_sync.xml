@@ -1,14 +1,5 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <Preference android:title="Software-Lizenzen" android:key="software_licenses">
 
-    </Preference>
-
-    <Preference android:title="Impressum" android:key="impressum">
-
-    </Preference>
-    <Preference android:title="Datenschutzerklärung" android:key="privacy_policy">
-
-    </Preference>
 
 </PreferenceScreen>

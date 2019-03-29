@@ -93,6 +93,11 @@
                             android:textAppearance="@style/TextAppearance.AppCompat.Large"
                             android:background="?attr/selectableItemBackground"
                             tools:text="Hello" android:fontFamily="@font/kidsn"/>
+                    <de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListViewSquare
+                            android:id="@+id/playground_elements" android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            app:elementsAreSelectable="false"
+                            app:overFlowHorizontal="true"/>
                     <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content" android:id="@+id/playground_description"
@@ -102,12 +107,6 @@
                             android:paddingRight="@dimen/list_item_spacing" android:fontFamily="casual"
                             android:textSize="18sp" android:text="Test"
                             android:typeface="normal"/>
-
-                    <de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListViewSquare
-                            android:id="@+id/playground_elements" android:layout_width="match_parent"
-                            android:layout_height="100dp"
-                            app:elementsAreSelectable="false"
-                            app:overFlowHorizontal="true"/>
                 </LinearLayout>
             </android.support.v4.widget.NestedScrollView>
 

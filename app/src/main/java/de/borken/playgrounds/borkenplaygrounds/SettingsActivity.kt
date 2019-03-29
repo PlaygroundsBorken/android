@@ -1,38 +1,29 @@
 package de.borken.playgrounds.borkenplaygrounds
 
-import android.annotation.TargetApi
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceActivity
-import android.preference.PreferenceFragment
-import android.preference.SwitchPreference
 import android.provider.Settings
 import android.support.v4.app.NavUtils
+import android.support.v7.app.AppCompatActivity
+import android.support.v7.preference.Preference
+import android.support.v7.preference.PreferenceFragmentCompat
 import android.view.MenuItem
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 
-
-
-
-/**
- * A [PreferenceActivity] that presents a set of application settings. On
- * handset devices, settings are presented as a single list. On tablets,
- * settings are split by category, with category headers shown to the left of
- * the list of settings.
- *
- * See [Android Design: Settings](http://developer.android.com/design/patterns/settings.html)
- * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
- * for more information on developing a Settings UI.
- */
-class SettingsActivity : AppCompatPreferenceActivity() {
+class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_settings)
         setupActionBar()
+
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.settings_container, MySettingsFragment())
+            .commit()
     }
 
     /**
@@ -52,162 +43,68 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    override fun onIsMultiPane(): Boolean {
-        return isXLargeTablet(this)
-    }
+    class MySettingsFragment : PreferenceFragmentCompat() {
 
-    /**
-     * {@inheritDoc}
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    override fun onBuildHeaders(target: List<PreferenceActivity.Header>) {
-        loadHeadersFromResource(R.xml.pref_headers, target)
-    }
+        override fun onPreferenceTreeClick(preference: Preference?): Boolean {
 
-    /**
-     * This method stops fragment injection in malicious applications.
-     * Make sure to deny any unknown fragments here.
-     */
-    override fun isValidFragment(fragmentName: String): Boolean {
-        return PreferenceFragment::class.java.name == fragmentName
-                || GeneralPreferenceFragment::class.java.name == fragmentName
-                || DataSyncPreferenceFragment::class.java.name == fragmentName
-    }
+            activity?.getPreferences(Context.MODE_PRIVATE)
+            when(preference?.key) {
+                "sponsor" -> {
 
-    override fun onHeaderClick(header: Header?, position: Int) {
-        super.onHeaderClick(header, position)
-
-        if (header?.id?.toInt() == R.id.avatarSettingsId) {
-
-            val viewIntent = Intent(this, AvatarActivity::class.java)
-            startActivity(viewIntent)
-        }
-    }
-
-    /**
-     * This fragment shows general preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    class GeneralPreferenceFragment : PreferenceFragment() {
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            addPreferencesFromResource(R.xml.pref_general)
-            setHasOptionsMenu(true)
-
-            val locationPreference = findPreference("select_location_settings")
-
-            locationPreference.setOnPreferenceClickListener {
-                val viewIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(viewIntent)
-
-                true
-            }
-
-            val switchPreference = findPreference("gps_disabled") as SwitchPreference
-
-
-            val sharedPref = activity.getPreferences(Context.MODE_PRIVATE)
-            val disabledGPS = sharedPref.getBoolean(getString(R.string.disabled_gps), false)
-
-            switchPreference.isChecked = disabledGPS
-
-            switchPreference.setOnPreferenceChangeListener { preference, _ ->
-                with (sharedPref.edit()) {
-                    putBoolean(getString(de.borken.playgrounds.borkenplaygrounds.R.string.disabled_gps), (preference as SwitchPreference).isChecked)
-                    apply()
+                    val viewIntent = Intent(activity, SponsorActivity::class.java)
+                    startActivity(viewIntent)
+                    return true
                 }
-                true
+                "select_location_settings" -> {
+                    val viewIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    startActivity(viewIntent)
+                    return true
+                }
+                "avatarSettingsId" -> {
+                    //val intent = Intent(activity, AvatarActivity::class.java) // Call the AppIntro java class
+                    //startActivity(intent)
+                    AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                    return true
+                }
+                "intro" -> {
+
+                    val intent = Intent(activity, IntroActivity::class.java) // Call the AppIntro java class
+                    startActivity(intent)
+                    return true
+                }
+                "remark_link" -> {
+                    val url = "https://www.borken.de/buergerservice/ideen-und-beschwerdemanagement/ideen-u-beschwerdemanagement.html"
+                    val i = Intent(Intent.ACTION_VIEW)
+                    i.data = Uri.parse(url)
+                    startActivity(i)
+
+                    return true
+                }
+                "software_licenses" -> {
+                    val intent = Intent(activity, OssLicensesMenuActivity::class.java)
+                    startActivity(intent)
+                    return true
+                }
+                "impressum" -> {
+                    val intent = Intent(activity, SimpleWebView::class.java)
+                    intent.putExtra("key", "impressum")
+                    startActivity(intent)
+                    return true
+                }
+                "privacy_policy" -> {
+                    val intent = Intent(activity, SimpleWebView::class.java)
+                    intent.putExtra("key", "privacy_policy")
+                    startActivity(intent)
+                    return true
+                }
             }
-
-            val sponsor = findPreference("sponsor")
-
-            sponsor.setOnPreferenceClickListener {
-                val viewIntent = Intent(activity, SponsorActivity::class.java)
-                startActivity(viewIntent)
-
-                true
-            }
-
-            val remarkLink = findPreference("remark_link")
-
-            remarkLink.setOnPreferenceClickListener {
-                val url = "https://www.borken.de/buergerservice/ideen-und-beschwerdemanagement/ideen-u-beschwerdemanagement.html"
-                val i = Intent(Intent.ACTION_VIEW)
-                i.data = Uri.parse(url)
-                startActivity(i)
-
-                true
-            }
+            return super.onPreferenceTreeClick(preference)
         }
 
-        override fun onOptionsItemSelected(item: MenuItem): Boolean {
-            val id = item.itemId
-            if (id == android.R.id.home) {
-                startActivity(Intent(activity, SettingsActivity::class.java))
-                return true
-            }
-            return super.onOptionsItemSelected(item)
-        }
-    }
+        override fun onCreatePreferences(p0: Bundle?, p1: String?) {
+            setPreferencesFromResource(R.xml.pref_headers,null)
 
-    /**
-     * This fragment shows data and sync preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    class DataSyncPreferenceFragment : PreferenceFragment() {
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            addPreferencesFromResource(R.xml.pref_data_sync)
-            setHasOptionsMenu(true)
 
-            val locationPreference = findPreference("software_licenses")
-
-            locationPreference.setOnPreferenceClickListener {
-                val intent = Intent(activity, OssLicensesMenuActivity::class.java)
-                startActivity(intent)
-                true
-            }
-            val impressum = findPreference("impressum")
-
-            impressum.setOnPreferenceClickListener {
-                val intent = Intent(activity, SimpleWebView::class.java)
-                intent.putExtra("key", "impressum")
-                startActivity(intent)
-                true
-            }
-            val privacyPolicy = findPreference("privacy_policy")
-
-            privacyPolicy.setOnPreferenceClickListener {
-                val intent = Intent(activity, SimpleWebView::class.java)
-                intent.putExtra("key", "privacy_policy")
-                startActivity(intent)
-                true
-            }
-        }
-
-        override fun onOptionsItemSelected(item: MenuItem): Boolean {
-            val id = item.itemId
-            if (id == android.R.id.home) {
-                startActivity(Intent(activity, SettingsActivity::class.java))
-                return true
-            }
-            return super.onOptionsItemSelected(item)
-        }
-    }
-
-    companion object {
-
-        /**
-         * Helper method to determine if the device has an extra-large screen. For
-         * example, 10" tablets are extra-large.
-         */
-        private fun isXLargeTablet(context: Context): Boolean {
-            return context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_XLARGE
         }
     }
 }

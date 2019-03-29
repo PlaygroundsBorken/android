@@ -12,9 +12,12 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.support.v4.app.ActivityCompat
+import android.support.v4.app.FragmentActivity
+import android.support.v4.app.FragmentManager
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.view.View
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
@@ -38,6 +41,7 @@ import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.localization.MapLocale
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
+import com.tapadoo.alerter.Alerter
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
@@ -95,11 +99,29 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
                 val playground = this.markerToPlayground[it.id]
 
-                if (playground !== null) {
-                    PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
-                    true
-                } else
-                    false
+                when {
+                    playground !== null -> {
+                        PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
+                        true
+                    }
+                    meMarker?.id == it.id -> {
+                        loadedPlaygrounds.filter { playground1 ->
+                            val playgroundLocation = Location("point B")
+                            playgroundLocation.latitude = playground1.location.latitude()
+                            playgroundLocation.longitude = playground1.location.longitude()
+
+                            val playgroundLocationA = Location("point A")
+                            playgroundLocationA.latitude = meMarker?.position?.latitude ?: 0.0
+                            playgroundLocationA.longitude = meMarker?.position?.longitude ?: 0.0
+                            playgroundLocationA.distanceTo(playgroundLocation) < 250
+                        }.first {
+                            PlaygroundListDialogFragment.newInstance(it).show(supportFragmentManager, "dialog")
+                            true
+                        }
+                        true
+                    }
+                    else -> false
+                }
             }
             mapboxMap.setLatLngBoundsForCameraTarget(RESTRICTED_BOUNDS_AREA)
 
@@ -111,6 +133,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             } catch (exception: RuntimeException) {
 
             }
+
+            if (lastKnownLocation != null) {
+                makeUseOfNewLocation(lastKnownLocation!!)
+            }
         }
 
         initLocations()
@@ -118,6 +144,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
         requestLocation()
     }
+
+    private var lastKnownLocation: Location? = null
 
     private fun requestLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE)
@@ -129,8 +157,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 locationManager.requestLocationUpdates(provider, 1, 10.0f, this)
 
                 try {
-                    val lastKnownLocation: Location = locationManager.getLastKnownLocation(provider)
-                    makeUseOfNewLocation(lastKnownLocation)
+                    lastKnownLocation = locationManager.getLastKnownLocation(provider)
+                    makeUseOfNewLocation(lastKnownLocation!!)
                 } catch (exception: IllegalStateException) {
 
                 }
@@ -274,8 +302,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
     private fun getAvailableProvider(): String? {
 
-        val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return null
-        val disabledGPS = sharedPref.getBoolean(getString(R.string.disabled_gps), false)
+        val sharedPreferences = getSharedPreferences(getString(R.string.disabled_gps), Context.MODE_PRIVATE)
+        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
 
         if (disabledGPS) {
             return null
@@ -353,6 +381,24 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             avatarURL = activeUser.avatarURL
         }
 
+        loadedPlaygrounds.filter {playground ->
+            val playgroundLocation = Location("point B")
+            playgroundLocation.latitude = playground.location.latitude()
+            playgroundLocation.longitude = playground.location.longitude()
+
+            val alreadyVisited = activeUser?.mVisitedPlaygrounds?.contains(playground.id) ?: false
+
+            location.distanceTo(playgroundLocation) < 250 && !alreadyVisited
+        }.forEach {
+            activeUser?.mVisitedPlaygrounds?.add(it.id)
+            activeUser?.update()
+            showNotificationAlert(
+                activeUser?.mVisitedPlaygrounds?.count() ?: 0,
+                this,
+                supportFragmentManager
+            )
+        }
+
         Glide.with(this /* context */)
             .asBitmap()
             .load(avatarURL)
@@ -380,10 +426,47 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                         builder.include(latLng)
                     }
 
-                    builder.include(LatLng(location.latitude, location.longitude))
-                    map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
+                    if (this@BaseMapboxActivity.playgroundsOnMap.size > 1) {
+                        builder.include(LatLng(location.latitude, location.longitude))
+                        map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
+                    } else {
+
+                        val newCameraPosition = CameraPosition.Builder()
+                            .target(LatLng(location.latitude, location.longitude))
+                            .zoom(14.0)
+                            .build()
+                        map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
+                    }
                 }
             })
+    }
+
+    private fun showNotificationAlert(count: Int, activity: FragmentActivity, fragmentManager: FragmentManager?) {
+
+        val notifications = this.applicationContext?.fetchPlaygroundNotifications
+
+        try {
+            val notification = notifications?.visitedPlaygroundsNotifications?.first { it.visitedPlaygrounds == count }
+
+            if (notification !== null) {
+
+                Alerter.create(activity)
+                    .setTitle(notification.title)
+                    .setText(notification.text)
+                    .setDuration(10000)
+                    .enableSwipeToDismiss()
+                    .addButton(
+                        "Avatar ändern",
+                        R.style.AlertButton,
+                        View.OnClickListener {
+                            AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                        }
+                    )
+                    .show()
+            }
+        } catch (exception: NoSuchElementException) {
+
+        }
     }
 
     public override fun onStart() {

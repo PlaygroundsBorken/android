@@ -21,11 +21,11 @@ import kotlinx.android.synthetic.main.sample_avatar_view.*
 
 
 
+
+
+
+
 class AvatarViewDialog : DialogFragment() {
-
-    private var avatarURL: String = getDefaultAvatarURL()
-
-    private var activeUser: User? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,27 +35,54 @@ class AvatarViewDialog : DialogFragment() {
         return inflater.inflate(de.borken.playgrounds.borkenplaygrounds.R.layout.sample_avatar_view, container, false)
     }
 
-    private var avatarSettings: AvatarSettings? = null
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        activeUser = context?.applicationContext?.playgroundApp?.activeUser
+        activeUser = activity?.applicationContext?.playgroundApp?.activeUser
 
-        avatarSettings = context?.applicationContext?.fetchAvatarSettings
+        avatarSettings = activity?.applicationContext?.fetchAvatarSettings
         if (activeUser?.avatarURL !== null) {
             avatarURL = activeUser?.avatarURL!!
         }
 
-        avatarSettings?.setFromAvatarUrl(avatarURL)
-        avatarSettings?.avatarSetting?.forEach {
+        var visitedPlaygrounds = activeUser?.mVisitedPlaygrounds?.size
 
-            createSpinner(it, avatarSettingsWrapper)
+        if (visitedPlaygrounds == null) {
+
+            visitedPlaygrounds = 0
+        }
+        val amount = steps[visitedPlaygrounds]
+        avatarSettings?.setFromAvatarUrl(avatarURL)
+        avatarSettings?.avatarSetting?.forEachIndexed { index, avatarSetting ->
+
+
+            if (visitedPlaygrounds > 0) {
+
+                if (amount != null) {
+                    if (amount >= index) {
+                        createSpinner(avatarSetting, avatarSettingsWrapper)
+                    }
+                } else {
+                    createSpinner(avatarSetting, avatarSettingsWrapper)
+                }
+            }
         }
 
         setAvatar()
         generateAvatar.setOnClickListener {
 
-            super.dismiss()
+            saveAvatar()
+            dismiss()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val displayMetrics = context?.resources?.displayMetrics
+
+        if (displayMetrics !== null) {
+            val dpHeight = displayMetrics.heightPixels * 0.9
+            val dpWidth = displayMetrics.widthPixels * 0.9
+            dialog?.window?.setLayout(dpWidth.toInt(), dpHeight.toInt())
         }
     }
 
@@ -70,6 +97,33 @@ class AvatarViewDialog : DialogFragment() {
         super.onDismiss(dialog)
     }
 
+    companion object {
+
+        fun newInstance(): AvatarViewDialog =
+
+            AvatarViewDialog().apply {
+                arguments = Bundle().apply {
+
+                }
+            }
+
+        fun getDefaultAvatarURL(): String {
+            var avatarURL = "https://avataaars.io/png/260?"
+            avatarURL += "&topType=NoHair"
+            avatarURL += "&accessoriesType=Blank"
+            avatarURL += "&clotheType=BlazerShirt"
+            avatarURL += "&eyeType=Default"
+            avatarURL += "&avatarStyle=Circle"
+
+            return avatarURL
+        }
+    }
+    private var avatarURL: String = AvatarViewDialog.getDefaultAvatarURL()
+    private var activeUser: User? = null
+    private var avatarSettings: AvatarSettings? = null
+
+    private val steps = hashMapOf(1 to 1, 2 to 2, 3 to 3, 5 to 4, 8 to 5, 11 to 6, 15 to 7, 21 to 8, 25 to 9)
+
     private fun createSpinner(avatarSetting: AvatarSetting, wrapper: LinearLayout) {
 
         val spinnerArray = ArrayList<String>()
@@ -83,31 +137,31 @@ class AvatarViewDialog : DialogFragment() {
             }
         }
 
-        if (context !== null) {
-            val spinner = Spinner(context)
-            val spinnerArrayAdapter =
-                ArrayAdapter<String>(context!!, android.R.layout.simple_spinner_dropdown_item, spinnerArray)
-            spinner.adapter = spinnerArrayAdapter
+        val spinner = Spinner(activity)
+        val spinnerArrayAdapter =
+            ArrayAdapter<String>(activity, android.R.layout.simple_spinner_dropdown_item, spinnerArray)
+        spinner.adapter = spinnerArrayAdapter
 
-            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onNothingSelected(parent: AdapterView<*>?) {
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {
 
-                }
+            }
 
-                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
 
-                    val selectedValue = avatarSetting.options[id.toInt()].value
+                val selectedValue = avatarSetting.options[id.toInt()].value
 
-                    if (avatarSettings !== null) {
-                        avatarSettings!!.selectAvatarSetting(avatarSetting.body_part, selectedValue)
-                        createAvatarUrl(avatarSettings!!)
-                    }
+                if (avatarSettings !== null) {
+                    avatarSettings!!.selectAvatarSetting(avatarSetting.body_part, selectedValue)
+                    createAvatarUrl(avatarSettings!!)
                 }
             }
-            spinner.setSelection(selectedIndex)
-            spinner.prompt = avatarSetting.body_part
-            wrapper.addView(spinner)
         }
+        spinner.setSelection(selectedIndex)
+        spinner.prompt = avatarSetting.body_part
+
+        wrapper.addView(spinner)
+
     }
 
     private fun createAvatarUrl(avatarSettings: AvatarSettings) {
@@ -132,27 +186,5 @@ class AvatarViewDialog : DialogFragment() {
 
         activeUser?.avatarURL = avatarURL
         activeUser?.update()
-    }
-
-    companion object {
-
-        fun newInstance(): AvatarViewDialog =
-
-            AvatarViewDialog().apply {
-                arguments = Bundle().apply {
-
-                }
-            }
-
-        fun getDefaultAvatarURL(): String {
-            var avatarURL = "https://avataaars.io/png/260?"
-            avatarURL += "&topType=NoHair"
-            avatarURL += "&accessoriesType=Blank"
-            avatarURL += "&clotheType=BlazerShirt"
-            avatarURL += "&eyeType=Default"
-            avatarURL += "&avatarStyle=Circle"
-
-            return avatarURL
-        }
     }
 }
