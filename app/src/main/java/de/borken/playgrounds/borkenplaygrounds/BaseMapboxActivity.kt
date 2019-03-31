@@ -158,8 +158,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
                 try {
                     lastKnownLocation = locationManager.getLastKnownLocation(provider)
-                    makeUseOfNewLocation(lastKnownLocation!!)
-                } catch (exception: IllegalStateException) {
+                    if (lastKnownLocation !== null) {
+                        makeUseOfNewLocation(lastKnownLocation!!)
+                    }
+                } catch (exception: Exception) {
 
                 }
             }
@@ -472,12 +474,12 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     public override fun onStart() {
         super.onStart()
         mapView?.onStart()
+        requestLocation()
     }
 
     public override fun onResume() {
         super.onResume()
         mapView?.onResume()
-        requestLocation()
     }
 
     public override fun onPause() {
@@ -554,8 +556,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
                 // permission denied, boo! Disable the
                 // functionality that depends on this permission.
-                val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
-                with (sharedPref.edit()) {
+                val sharedPreferences = getSharedPreferences(getString(R.string.disabled_gps), Context.MODE_PRIVATE)
+                with (sharedPreferences.edit()) {
                     putBoolean(getString(R.string.disabled_gps), true)
                     apply()
                 }
