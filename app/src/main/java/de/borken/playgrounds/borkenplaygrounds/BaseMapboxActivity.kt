@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Location
@@ -17,10 +18,14 @@ import android.support.v4.app.FragmentManager
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.preference.PreferenceManager
 import android.view.View
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.gson.JsonObject
@@ -29,6 +34,7 @@ import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
+import com.mapbox.mapboxsdk.annotations.Icon
 import com.mapbox.mapboxsdk.annotations.IconFactory
 import com.mapbox.mapboxsdk.annotations.Marker
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
@@ -71,10 +77,108 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     }
 
     private lateinit var locationManager: LocationManager
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    private val MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: Int = 199
+
+    private var locationUpdatesAreAllowed: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playground)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+                for (location in locationResult.locations){
+                    makeUseOfNewLocation(location)
+                }
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            ) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.title_location_permission)
+                    .setMessage(R.string.text_location_permission)
+                    .setPositiveButton(R.string.ok) { _, _ ->
+                        ActivityCompat.requestPermissions(
+                            this@BaseMapboxActivity,
+                            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                        )
+                    }
+                    .create()
+                    .show()
+
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                )
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+
+                    if (location !== null) {
+
+                        lastKnownLocation = location
+                        makeUseOfNewLocation(location)
+                    }
+                }
+        } else {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.title_location_permission)
+                    .setMessage(R.string.text_location_permission)
+                    .setPositiveButton(R.string.ok) { _, _ ->
+                        ActivityCompat.requestPermissions(
+                            this@BaseMapboxActivity,
+                            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                        )
+                    }
+                    .create()
+                    .show()
+
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                )
+            }
+        }
 
         var accessToken = this.applicationContext.fetchMapboxAccessToken
         if (accessToken.isEmpty()) {
@@ -142,31 +246,44 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         initLocations()
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        requestLocation()
-    }
+        //requestLocation()
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
+        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
 
-    private var lastKnownLocation: Location? = null
+        if (!disabledGPS) {
+            val builder = LocationSettingsRequest.Builder()
+            val locationRequest = createLocationRequest()
+            if (locationRequest !== null) {
+                builder.addLocationRequest(locationRequest)
+                val client: SettingsClient = LocationServices.getSettingsClient(this)
+                val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
 
-    private fun requestLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
+                task.addOnSuccessListener {
+                    locationUpdatesAreAllowed = true
+                }
 
-            val provider = getAvailableProvider()
-            if (provider != null) {
-                locationManager.requestLocationUpdates(provider, 1, 10.0f, this)
-
-                try {
-                    lastKnownLocation = locationManager.getLastKnownLocation(provider)
-                    if (lastKnownLocation !== null) {
-                        makeUseOfNewLocation(lastKnownLocation!!)
+                task.addOnFailureListener { exception ->
+                    if (exception is ResolvableApiException) {
+                        // Location settings are not satisfied, but this can be fixed
+                        // by showing the user a dialog.
+                        stopLocationUpdates()
+                        try {
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            exception.startResolutionForResult(
+                                this@BaseMapboxActivity,
+                                MY_PERMISSIONS_REQUEST_LOCATION
+                            )
+                        } catch (sendEx: IntentSender.SendIntentException) {
+                            // Ignore the error.
+                        }
                     }
-                } catch (exception: Exception) {
-
                 }
             }
         }
     }
+
+    private var lastKnownLocation: Location? = null
 
     private fun addMarkersToMap(mapboxMap: MapboxMap, playgrounds: List<Playground>) {
         val bitmap = getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round)
@@ -298,82 +415,37 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 .build()
             map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
         }
+        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
+            // If request is cancelled, the result arrays are empty.
+            if (resultCode == Activity.RESULT_OK) {
+
+                // permission was granted, yay! Do the
+                // location-related task you need to do.
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED
+                ) {
+
+                    startLocationUpdates()
+                }
+
+            } else {
+                stopLocationUpdates()
+                // permission denied, boo! Disable the
+                // functionality that depends on this permission.
+                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
+                with (sharedPreferences.edit()) {
+                    putBoolean(getString(R.string.disabled_gps), true)
+                    apply()
+                }
+            }
+        }
     }
 
     private val MY_PERMISSIONS_REQUEST_LOCATION: Int = 99
 
-    private fun getAvailableProvider(): String? {
-
-        val sharedPreferences = getSharedPreferences(getString(R.string.disabled_gps), Context.MODE_PRIVATE)
-        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
-
-        if (disabledGPS) {
-            return null
-        }
-
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-        // getting GPS status
-        val isGPSEnabled = locationManager
-            .isProviderEnabled(LocationManager.GPS_PROVIDER) &&
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-
-
-        if (isGPSEnabled) {
-
-            return LocationManager.GPS_PROVIDER
-        }
-
-        // getting network status
-        val isNetworkEnabled = locationManager
-            .isProviderEnabled(LocationManager.NETWORK_PROVIDER) && ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (isNetworkEnabled) {
-
-            return LocationManager.NETWORK_PROVIDER
-        }
-
-        // Should we show an explanation?
-        if (ActivityCompat.shouldShowRequestPermissionRationale(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        ) {
-
-            // Show an explanation to the user *asynchronously* -- don't block
-            // this thread waiting for the user's response! After the user
-            // sees the explanation, try again to request the permission.
-            AlertDialog.Builder(this)
-                .setTitle(R.string.title_location_permission)
-                .setMessage(R.string.text_location_permission)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    ActivityCompat.requestPermissions(
-                        this@BaseMapboxActivity,
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                        MY_PERMISSIONS_REQUEST_LOCATION
-                    )
-                }
-                .create()
-                .show()
-
-
-        } else {
-            // No explanation needed, we can request the permission.
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                MY_PERMISSIONS_REQUEST_LOCATION
-            )
-        }
-
-        return null
-    }
+    private var icon: Icon? = null
 
     private fun makeUseOfNewLocation(location: Location) {
 
@@ -401,46 +473,55 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             )
         }
 
-        Glide.with(this /* context */)
-            .asBitmap()
-            .load(avatarURL)
-            .into<SimpleTarget<Bitmap>>(object : SimpleTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+        if (icon == null) {
+            Glide.with(this /* context */)
+                .asBitmap()
+                .load(avatarURL)
+                .into<SimpleTarget<Bitmap>>(object : SimpleTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
 
-                    val icon = IconFactory.getInstance(this@BaseMapboxActivity).fromBitmap(resource)
+                        icon = IconFactory.getInstance(this@BaseMapboxActivity).fromBitmap(resource)
 
-                    if (meMarker !== null)
-                        map?.removeMarker(meMarker!!)
-
-                    meMarker = map?.addMarker(
-                        MarkerOptions().position(
-                            LatLng(location.latitude, location.longitude)
-                        ).icon(icon)
-                    )
-
-                    val builder = LatLngBounds.Builder()
-                    this@BaseMapboxActivity.playgroundsOnMap.forEach {
-                        val latLng = LatLng(
-                            it.location.latitude(),
-                            it.location.longitude()
-                        )
-
-                        builder.include(latLng)
+                        moveMeMarker(location)
                     }
+                })
+        } else {
 
-                    if (this@BaseMapboxActivity.playgroundsOnMap.size > 1) {
-                        builder.include(LatLng(location.latitude, location.longitude))
-                        map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
-                    } else {
+            moveMeMarker(location)
+        }
+    }
 
-                        val newCameraPosition = CameraPosition.Builder()
-                            .target(LatLng(location.latitude, location.longitude))
-                            .zoom(14.0)
-                            .build()
-                        map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
-                    }
-                }
-            })
+    private fun moveMeMarker(location: Location) {
+        if (meMarker !== null)
+            map?.removeMarker(meMarker!!)
+
+        meMarker = map?.addMarker(
+            MarkerOptions().position(
+                LatLng(location.latitude, location.longitude)
+            ).icon(icon)
+        )
+
+        val builder = LatLngBounds.Builder()
+        this@BaseMapboxActivity.playgroundsOnMap.forEach {
+            val latLng = LatLng(
+                it.location.latitude(),
+                it.location.longitude()
+            )
+
+            builder.include(latLng)
+        }
+
+        if (this@BaseMapboxActivity.playgroundsOnMap.size > 1) {
+            builder.include(LatLng(location.latitude, location.longitude))
+            map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
+        } else {
+
+            val newCameraPosition = CameraPosition.Builder()
+                .target(LatLng(location.latitude, location.longitude))
+                .zoom(14.0)
+                .build()
+            map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
+        }
     }
 
     private fun showNotificationAlert(count: Int, activity: FragmentActivity, fragmentManager: FragmentManager?) {
@@ -471,20 +552,96 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         }
     }
 
+    private lateinit var locationCallback: LocationCallback
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    private fun createLocationRequest(): LocationRequest? {
+        return LocationRequest.create()?.apply {
+            interval = 10000
+            fastestInterval = 5000
+            smallestDisplacement = 50.0f
+            priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+    }
+    private fun startLocationUpdates() {
+
+        if (!locationUpdatesAreAllowed) {
+
+            return
+        }
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
+        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
+
+        if (disabledGPS) {
+            stopLocationUpdates()
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationClient.requestLocationUpdates(
+                createLocationRequest(),
+                locationCallback,
+                null /* Looper */
+            )
+        } else {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.title_location_permission)
+                    .setMessage(R.string.text_location_permission)
+                    .setPositiveButton(R.string.ok) { _, _ ->
+                        ActivityCompat.requestPermissions(
+                            this@BaseMapboxActivity,
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                        )
+                    }
+                    .create()
+                    .show()
+
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                )
+            }
+        }
+    }
+
     public override fun onStart() {
         super.onStart()
         mapView?.onStart()
-        requestLocation()
     }
 
     public override fun onResume() {
         super.onResume()
         mapView?.onResume()
+
+        startLocationUpdates()
     }
 
     public override fun onPause() {
         super.onPause()
         mapView?.onPause()
+        stopLocationUpdates()
     }
 
     public override fun onStop() {
@@ -529,34 +686,15 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
+        if (requestCode == MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
             // If request is cancelled, the result arrays are empty.
             if (grantResults.isNotEmpty()
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && grantResults[0] != PackageManager.PERMISSION_GRANTED
             ) {
-
-                // permission was granted, yay! Do the
-                // location-related task you need to do.
-                if (ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    )
-                    == PackageManager.PERMISSION_GRANTED
-                ) {
-
-                    //Request location updates:
-                    val provider = getAvailableProvider()
-                    if (provider != null) {
-
-                        locationManager.requestLocationUpdates(provider, 100, 10.0f, this)
-                    }
-                }
-
-            } else {
-
+                stopLocationUpdates()
                 // permission denied, boo! Disable the
                 // functionality that depends on this permission.
-                val sharedPreferences = getSharedPreferences(getString(R.string.disabled_gps), Context.MODE_PRIVATE)
+                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
                 with (sharedPreferences.edit()) {
                     putBoolean(getString(R.string.disabled_gps), true)
                     apply()

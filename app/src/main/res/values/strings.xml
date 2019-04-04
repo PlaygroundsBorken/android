@@ -104,5 +104,10 @@
         pk.eyJ1IjoidGJ1bmluZyIsImEiOiJjam5ieXgyMXkycmVnM2tydXNjYWZscDgyIn0.FXkwAzBLXRKBvxGRLjgAnA
     </string>
     <string name="MAPBOX_STYLE">mapbox://styles/tbuning/cjn4rntv80h002rnwdnsnfp39</string>
-    <string name="avatar_intro_text">Gestalte Deinen eigenen Avatar! Nach Spielplatzbesuchen erhältst Du neues Zubehör (Augenfarbe, Brille, Haare, etc.) um Deinen persönlichen Avatar zu gestalten.</string>
+    <string name="avatar_intro_text">Gestalte Deinen eigenen Avatar! Nach Spielplatzbesuchen erhältst Du neues Zubehör
+        (Augenfarbe, Brille, Haare, etc.) um Deinen persönlichen Avatar zu gestalten.
+    </string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

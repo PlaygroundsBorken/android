@@ -2,7 +2,6 @@ package de.borken.playgrounds.borkenplaygrounds
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -153,22 +152,11 @@ class SplashScreen : AppCompatActivity(), User.UserCreated {
     private fun finalizeSplashScreen() {
         progressBar.progress = 100
 
-        val sp = this.getPreferences(Context.MODE_PRIVATE)
-        // Todo Intro Activity
-        if (!sp.getBoolean("first", true)) {
-            val editor = sp.edit()
-            editor.putBoolean("first", true)
-            editor.apply()
-            val intent = Intent(this, IntroActivity::class.java) // Call the AppIntro java class
-            startActivity(intent)
-        } else {
-
-            val intent = Intent(
-                applicationContext,
-                PlaygroundActivity::class.java
-            )
-            startActivity(intent)
-        }
+        val intent = Intent(
+            applicationContext,
+            PlaygroundActivity::class.java
+        )
+        startActivity(intent)
         finish()
     }
 }

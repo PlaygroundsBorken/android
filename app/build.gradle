@@ -14,8 +14,8 @@ android {
         applicationId "de.borken.playgrounds.borkenplaygrounds"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 11
-        versionName '0.4.2'
+        versionCode 13
+        versionName '0.6.0'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
@@ -30,6 +30,11 @@ android {
         }
     }
     productFlavors {
+    }
+    android {
+        lintOptions {
+            abortOnError false
+        }
     }
 }
 
@@ -69,7 +74,7 @@ dependencies {
     implementation 'com.android.support:cardview-v7:28.0.0'
     androidTestImplementation 'tools.fastlane:screengrab:1.2.0'
     implementation 'com.google.android.gms:play-services-oss-licenses:16.0.2'
-    implementation 'com.github.AppIntro:AppIntro:4.2.3'
+    implementation 'com.github.AppIntro:AppIntro:5.1.0'
     implementation 'com.google.firebase:firebase-auth:16.2.0'
 }
 

@@ -1,9 +1,9 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- These settings Preferences are only used on tablets. -->
-    <!-- <Preference android:key="intro" android:title="Anwendertipps"
+    <Preference android:key="intro" android:title="Anwendertipps"
             android:icon="@drawable/ic_info">
-    </Preference>-->
+    </Preference>
     <Preference
             android:key="avatarSettingsId"
             android:title="@string/pref_header_change_avatar"
@@ -16,6 +16,7 @@
 
     <SwitchPreference
             android:key="@string/disabled_gps"
+            android:defaultValue="false"
             android:title="Standorteinstellungen deaktiviert"
             android:icon="@drawable/ic_baseline_my_location_24px">
 

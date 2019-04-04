@@ -13,6 +13,7 @@ import android.view.MenuItem
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 
+
 class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,8 +104,6 @@ class SettingsActivity : AppCompatActivity() {
 
         override fun onCreatePreferences(p0: Bundle?, p1: String?) {
             setPreferencesFromResource(R.xml.pref_headers,null)
-
-
         }
     }
 }
