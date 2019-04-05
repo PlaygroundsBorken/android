@@ -19,9 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
@@ -30,61 +28,66 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.gson.JsonObject
 import com.mapbox.api.geocoding.v5.models.CarmenFeature
-import com.mapbox.geojson.Feature
-import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
-import com.mapbox.mapboxsdk.annotations.Icon
-import com.mapbox.mapboxsdk.annotations.IconFactory
-import com.mapbox.mapboxsdk.annotations.Marker
-import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.geometry.LatLngBounds
 import com.mapbox.mapboxsdk.maps.MapboxMap
+import com.mapbox.mapboxsdk.plugins.annotation.Symbol
+import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager
+import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.localization.MapLocale
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
-import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import com.tapadoo.alerter.Alerter
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
+import de.borken.playgrounds.borkenplaygrounds.models.BitmapTarget
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import kotlinx.android.synthetic.main.activity_playground.*
 
 open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
-    private val BOUND_CORNER_NW = LatLng(52.0, 7.0)
-    private val BOUND_CORNER_SE = LatLng(51.6, 6.6)
-    private val RESTRICTED_BOUNDS_AREA = LatLngBounds.Builder()
-        .include(BOUND_CORNER_NW)
-        .include(BOUND_CORNER_SE)
+    private val _meMarkerIcon = "memarker"
+    private val _playgroundMarkerIcon = "playground"
+    private val _boundCornerNE = LatLng(52.0, 7.0)
+    private val _boundCornerSW = LatLng(51.6, 6.6)
+    private val _restrictedBoundsArea = LatLngBounds.Builder()
+        .include(_boundCornerNE)
+        .include(_boundCornerSW)
         .build()
 
-    private var meMarker: Marker? = null
+    private var meMarker: Symbol? = null
     private var map: MapboxMap? = null
-    private val markerToPlayground: MutableMap<Long, Playground> = mutableMapOf()
+    private val markerToPlayground: MutableMap<Symbol, Playground> = mutableMapOf()
     private val playgroundsOnMap = mutableSetOf<Playground>()
     private val loadedPlaygrounds = mutableListOf<Playground>()
-    protected val CODE_AUTOCOMPLETE = 1
+    protected val codeAutocomplete = 1
     protected lateinit var autocompleteLocation: List<CarmenFeature>
+    private lateinit var locationManager: LocationManager
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val _myPermisionsRequestInt: Int = 199
+    private var locationUpdatesAreAllowed: Boolean = false
+    private var symbolManager: SymbolManager? = null
+    private val _myPermissionRequestLocation: Int = 99
 
     override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
         super.onCreate(savedInstanceState, persistentState)
         onCreate(savedInstanceState)
     }
 
-    private lateinit var locationManager: LocationManager
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-
-    private val MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: Int = 199
-
-    private var locationUpdatesAreAllowed: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        var accessToken = this.applicationContext.fetchMapboxAccessToken
+        if (accessToken.isEmpty()) {
+            accessToken = getString(R.string.access_token)
+        }
+        Mapbox.getInstance(this, accessToken)
+
         setContentView(R.layout.activity_playground)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -97,60 +100,61 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             }
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location: Location? ->
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
+        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
 
-                    if (location !== null) {
-
-                        lastKnownLocation = location
-                        makeUseOfNewLocation(location)
-                    }
-                }
-        } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
+        if (!disabledGPS) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
             ) {
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { location: Location? ->
 
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                AlertDialog.Builder(this)
-                    .setTitle(R.string.title_location_permission)
-                    .setMessage(R.string.text_location_permission)
-                    .setPositiveButton(R.string.ok) { _, _ ->
-                        ActivityCompat.requestPermissions(
-                            this@BaseMapboxActivity,
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                            ),
-                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-                        )
+                        if (location !== null) {
+
+                            lastKnownLocation = location
+                            makeUseOfNewLocation(location)
+                        }
                     }
-                    .create()
-                    .show()
-
-
             } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-                )
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                ) {
+
+                    // Show an explanation to the user *asynchronously* -- don't block
+                    // this thread waiting for the user's response! After the user
+                    // sees the explanation, try again to request the permission.
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.title_location_permission)
+                        .setMessage(R.string.text_location_permission)
+                        .setPositiveButton(R.string.ok) { _, _ ->
+                            ActivityCompat.requestPermissions(
+                                this@BaseMapboxActivity,
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                ),
+                                _myPermisionsRequestInt
+                            )
+                        }
+                        .create()
+                        .show()
+
+
+                } else {
+                    // No explanation needed, we can request the permission.
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        _myPermisionsRequestInt
+                    )
+                }
             }
         }
 
-        var accessToken = this.applicationContext.fetchMapboxAccessToken
-        if (accessToken.isEmpty()) {
-            accessToken = getString(R.string.access_token)
-        }
 
         var mapboxUrl = this.applicationContext.fetchMapboxUrl
         if (mapboxUrl.isEmpty()) {
@@ -159,51 +163,81 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         }
         Mapbox.getInstance(this, accessToken)
         mapView.onCreate(savedInstanceState)
-        mapView.setStyleUrl(mapboxUrl)
         mapView.getMapAsync { mapboxMap ->
             map = mapboxMap
+            mapboxMap.setStyle(mapboxUrl)
 
-            if (loadedPlaygrounds.isNotEmpty())
-                addMarkersToMap(mapboxMap, loadedPlaygrounds)
-
-            mapboxMap.setOnMarkerClickListener {
-
-                val playground = this.markerToPlayground[it.id]
-
-                when {
-                    playground !== null -> {
-                        PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
-                        true
-                    }
-                    meMarker?.id == it.id -> {
-                        loadedPlaygrounds.filter { playground1 ->
-                            val playgroundLocation = Location("point B")
-                            playgroundLocation.latitude = playground1.location.latitude()
-                            playgroundLocation.longitude = playground1.location.longitude()
-
-                            val playgroundLocationA = Location("point A")
-                            playgroundLocationA.latitude = meMarker?.position?.latitude ?: 0.0
-                            playgroundLocationA.longitude = meMarker?.position?.longitude ?: 0.0
-                            playgroundLocationA.distanceTo(playgroundLocation) < 250
-                        }.first {
-                            PlaygroundListDialogFragment.newInstance(it).show(supportFragmentManager, "dialog")
-                            true
-                        }
-                        true
-                    }
-                    else -> false
+            mapboxMap.setStyle(mapboxUrl) { style ->
+                style.addImage(
+                    _playgroundMarkerIcon,
+                    getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round),
+                    false
+                )
+                val activeUser = this.applicationContext.playgroundApp.activeUser
+                var avatarURL = AvatarViewDialog.getDefaultAvatarURL()
+                if (activeUser?.avatarURL !== null) {
+                    avatarURL = activeUser.avatarURL
                 }
+                Glide.with(this /* context */)
+                    .asBitmap()
+                    .load(avatarURL)
+                    .into<BitmapTarget>(object : BitmapTarget() {
+                        override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+
+                            style.addImage(
+                                _meMarkerIcon,
+                                resource,
+                                false
+                            )
+                        }
+                    })
+
+                symbolManager = SymbolManager(mapView, mapboxMap, style)
+                symbolManager?.iconAllowOverlap = true
+                symbolManager?.textAllowOverlap = true
+                symbolManager?.addClickListener {
+                    val playground = this.markerToPlayground[it]
+
+                    when {
+                        playground !== null -> {
+                            PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
+                        }
+                        meMarker?.id == it.id -> {
+                            try {
+                                loadedPlaygrounds.filter { playground1 ->
+                                    val playgroundLocation = Location("point B")
+                                    playgroundLocation.latitude = playground1.location.latitude()
+                                    playgroundLocation.longitude = playground1.location.longitude()
+
+                                    val playgroundLocationA = Location("point A")
+
+                                    playgroundLocationA.latitude = meMarker?.latLng?.latitude ?: 0.0
+                                    playgroundLocationA.longitude = meMarker?.latLng?.longitude ?: 0.0
+                                    playgroundLocationA.distanceTo(playgroundLocation) < 250
+                                }.first { _playground ->
+                                    PlaygroundListDialogFragment.newInstance(_playground)
+                                        .show(supportFragmentManager, "dialog")
+                                    true
+                                }
+                            } catch (e: Exception) {
+                            }
+                        }
+                    }
+                }
+
+                val localizationPlugin = LocalizationPlugin(mapView!!, mapboxMap, style)
+                localizationPlugin.setMapLanguage(MapLocale(MapLocale.GERMAN))
+
+                try {
+                    localizationPlugin.matchMapLanguageWithDeviceDefault()
+                } catch (exception: RuntimeException) {
+
+                }
+                if (loadedPlaygrounds.isNotEmpty())
+                    addMarkersToMap(mapboxMap, loadedPlaygrounds)
             }
-            mapboxMap.setLatLngBoundsForCameraTarget(RESTRICTED_BOUNDS_AREA)
 
-            val localizationPlugin = LocalizationPlugin(mapView!!, mapboxMap)
-            localizationPlugin.setMapLanguage(MapLocale(MapLocale.GERMAN))
-
-            try {
-                localizationPlugin.matchMapLanguageWithDeviceDefault()
-            } catch (exception: RuntimeException) {
-
-            }
+            mapboxMap.setLatLngBoundsForCameraTarget(_restrictedBoundsArea)
 
             if (lastKnownLocation != null) {
                 makeUseOfNewLocation(lastKnownLocation!!)
@@ -213,9 +247,6 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         initLocations()
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        //requestLocation()
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
-        val disabledGPS = sharedPreferences.getBoolean(getString(R.string.disabled_gps), false)
 
         if (!disabledGPS) {
             val builder = LocationSettingsRequest.Builder()
@@ -239,7 +270,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                             // and check the result in onActivityResult().
                             exception.startResolutionForResult(
                                 this@BaseMapboxActivity,
-                                MY_PERMISSIONS_REQUEST_LOCATION
+                                _myPermissionRequestLocation
                             )
                         } catch (sendEx: IntentSender.SendIntentException) {
                             // Ignore the error.
@@ -253,9 +284,6 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     private var lastKnownLocation: Location? = null
 
     private fun addMarkersToMap(mapboxMap: MapboxMap, playgrounds: List<Playground>) {
-        val bitmap = getBitmapFromVectorDrawable(this, R.mipmap.ic_launcher_round)
-        val icon = IconFactory.getInstance(this).fromBitmap(bitmap)
-
         val builder = LatLngBounds.Builder()
 
         val filteredPlaygrounds = playgrounds.filter { it !in playgroundsOnMap }
@@ -265,17 +293,19 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 it.location.latitude(),
                 it.location.longitude()
             )
+            val symbolOptions = SymbolOptions()
+                .withLatLng(latLng)
+                .withIconImage(_playgroundMarkerIcon)
+                .withIconSize(1.3f)
 
-            val addMarker = mapboxMap.addMarker(
-                MarkerOptions().position(
-                    latLng
-                ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
-            )
+            val symbol = symbolManager?.create(symbolOptions)
 
-            if (this.markerToPlayground.values.contains(it)) {
-                this.markerToPlayground.remove(addMarker.id)
+            if (symbol !== null) {
+                if (this.markerToPlayground.values.contains(it)) {
+                    this.markerToPlayground.remove(symbol)
+                }
+                this.markerToPlayground[symbol] = it
             }
-            this.markerToPlayground[addMarker.id] = it
             this.playgroundsOnMap.add(it)
         }
 
@@ -316,13 +346,15 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             activeMarkerToPlayground = markerToPlayground
         }
 
-        map?.markers?.filter { !activeMarkerToPlayground.keys.contains(it.id) }?.forEach {
-
-            map?.removeMarker(it)
+        markerToPlayground.keys.subtract(activeMarkerToPlayground.keys).forEach {
+            it.iconOpacity = 0.0f
+            symbolManager?.update(it)
         }
 
-        if (map != null)
-            addMarkersToMap(map!!, activeMarkerToPlayground.values.toList())
+        activeMarkerToPlayground.keys.forEach {
+            it.iconOpacity = 1.0f
+            symbolManager?.update(it)
+        }
     }
 
     private fun initLocations() {
@@ -362,31 +394,26 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (resultCode == Activity.RESULT_OK && requestCode == CODE_AUTOCOMPLETE) {
+        if (resultCode == Activity.RESULT_OK && requestCode == codeAutocomplete) {
 
             // Retrieve selected location's CarmenFeature
             val selectedCarmenFeature = PlaceAutocomplete.getPlace(data)
 
-            // Create a new FeatureCollection and add a new Feature to it using selectedCarmenFeature above
-            val featureCollection = FeatureCollection.fromFeatures(
-                arrayOf<Feature>(Feature.fromJson(selectedCarmenFeature.toJson()))
+            map?.animateCamera(
+                CameraUpdateFactory.newCameraPosition(
+                    CameraPosition.Builder()
+                        .target(
+                            LatLng(
+                                (selectedCarmenFeature.geometry() as Point).latitude(),
+                                (selectedCarmenFeature.geometry() as Point).longitude()
+                            )
+                        )
+                        .zoom(14.0)
+                        .build()
+                ), 4000
             )
-
-            map?.getSourceAs<GeoJsonSource>("playground-borken")?.setGeoJson(featureCollection)
-
-            // Move map camera to the selected location
-            val newCameraPosition = CameraPosition.Builder()
-                .target(
-                    LatLng(
-                        (selectedCarmenFeature.geometry() as Point).latitude(),
-                        (selectedCarmenFeature.geometry() as Point).longitude()
-                    )
-                )
-                .zoom(14.0)
-                .build()
-            map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
         }
-        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
+        if (requestCode == _myPermissionRequestLocation) {
             // If request is cancelled, the result arrays are empty.
             if (resultCode == Activity.RESULT_OK) {
 
@@ -414,17 +441,9 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         }
     }
 
-    private val MY_PERMISSIONS_REQUEST_LOCATION: Int = 99
-
-    private var icon: Icon? = null
-
     private fun makeUseOfNewLocation(location: Location) {
 
         val activeUser = this.applicationContext.playgroundApp.activeUser
-        var avatarURL = AvatarViewDialog.getDefaultAvatarURL()
-        if (activeUser?.avatarURL !== null) {
-            avatarURL = activeUser.avatarURL
-        }
 
         loadedPlaygrounds.filter { playground ->
             val playgroundLocation = Location("point B")
@@ -439,63 +458,54 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             activeUser?.update()
             showNotificationAlert(
                 activeUser?.mVisitedPlaygrounds?.count() ?: 0,
-                this,
-                supportFragmentManager
+                this
             )
         }
-
-        if (icon == null) {
-            Glide.with(this /* context */)
-                .asBitmap()
-                .load(avatarURL)
-                .into<SimpleTarget<Bitmap>>(object : SimpleTarget<Bitmap>() {
-                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-
-                        icon = IconFactory.getInstance(this@BaseMapboxActivity).fromBitmap(resource)
-
-                        moveMeMarker(location)
-                    }
-                })
-        } else {
-
-            moveMeMarker(location)
-        }
+        moveMeMarker(location)
     }
 
-    private fun moveMeMarker(location: Location) {
-        if (meMarker !== null)
-            map?.removeMarker(meMarker!!)
 
-        meMarker = map?.addMarker(
-            MarkerOptions().position(
-                LatLng(location.latitude, location.longitude)
-            ).icon(icon)
-        )
+
+    private fun moveMeMarker(location: Location) {
+
+        val latLng = LatLng(location.latitude, location.longitude)
+        if (meMarker === null) {
+
+            val symbolOptions = SymbolOptions()
+                .withLatLng(latLng)
+                .withIconImage(_meMarkerIcon)
+                .withIconSize(1f)
+
+            symbolManager?.create(symbolOptions)
+        } else {
+            meMarker?.latLng = latLng
+            symbolManager?.update(meMarker)
+        }
 
         val builder = LatLngBounds.Builder()
         this@BaseMapboxActivity.playgroundsOnMap.forEach {
-            val latLng = LatLng(
-                it.location.latitude(),
-                it.location.longitude()
+            builder.include(
+                LatLng(
+                    it.location.latitude(),
+                    it.location.longitude()
+                )
             )
-
-            builder.include(latLng)
         }
 
         if (this@BaseMapboxActivity.playgroundsOnMap.size > 1) {
-            builder.include(LatLng(location.latitude, location.longitude))
+            builder.include(latLng)
             map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
         } else {
 
             val newCameraPosition = CameraPosition.Builder()
-                .target(LatLng(location.latitude, location.longitude))
+                .target(latLng)
                 .zoom(14.0)
                 .build()
             map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
         }
     }
 
-    private fun showNotificationAlert(count: Int, activity: FragmentActivity, fragmentManager: FragmentManager?) {
+    private fun showNotificationAlert(count: Int, activity: FragmentActivity) {
 
         val notifications = this.applicationContext?.fetchPlaygroundNotifications
 
@@ -569,10 +579,6 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                     Manifest.permission.ACCESS_FINE_LOCATION
                 )
             ) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
                 AlertDialog.Builder(this)
                     .setTitle(R.string.title_location_permission)
                     .setMessage(R.string.text_location_permission)
@@ -580,7 +586,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                         ActivityCompat.requestPermissions(
                             this@BaseMapboxActivity,
                             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                            _myPermisionsRequestInt
                         )
                     }
                     .create()
@@ -592,7 +598,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+                    _myPermisionsRequestInt
                 )
             }
         }
@@ -658,7 +664,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
+        if (requestCode == _myPermisionsRequestInt) {
             // If request is cancelled, the result arrays are empty.
             if (grantResults.isNotEmpty()
                 && grantResults[0] != PackageManager.PERMISSION_GRANTED

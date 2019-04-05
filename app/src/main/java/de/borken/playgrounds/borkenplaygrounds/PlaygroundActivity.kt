@@ -73,7 +73,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
                 .accessToken(accessToken)
                 .placeOptions(options)
                 .build(this)
-            startActivityForResult(intent, CODE_AUTOCOMPLETE)
+            startActivityForResult(intent, codeAutocomplete)
         }
     }
 }

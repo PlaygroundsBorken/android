@@ -202,7 +202,6 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
             val sliderView = PlaygroundSliderView(view.context)
             sliderView
                 .image(image)
-                .setBackgroundColor(Color.WHITE)
                 .setProgressBarVisible(true)
 
             sliderView.setOnSliderClickListener {
