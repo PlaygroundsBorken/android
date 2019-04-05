@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PersistableBundle
+import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundElementListDialogFragment
@@ -49,7 +50,6 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
         }
     }
 
-
     private fun initSearchFab() {
 
         searchButton?.setOnClickListener {
@@ -58,6 +58,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
                 .limit(10)
                 .language("de")
                 .country("DE")
+                .bbox(Point.fromLngLat(6.6, 51.6), Point.fromLngLat(7.0, 52.0))
                 .backgroundColor(Color.parseColor("#AAFFFFFF"))
 
 

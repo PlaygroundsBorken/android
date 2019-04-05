@@ -5,11 +5,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.support.v4.app.NavUtils
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.preference.Preference
-import android.support.v7.preference.PreferenceFragmentCompat
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NavUtils
+import androidx.preference.PreferenceFragmentCompat
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 
@@ -46,7 +45,7 @@ class SettingsActivity : AppCompatActivity() {
 
     class MySettingsFragment : PreferenceFragmentCompat() {
 
-        override fun onPreferenceTreeClick(preference: Preference?): Boolean {
+        override fun onPreferenceTreeClick(preference: androidx.preference.Preference?): Boolean {
 
             activity?.getPreferences(Context.MODE_PRIVATE)
             when(preference?.key) {
@@ -64,7 +63,9 @@ class SettingsActivity : AppCompatActivity() {
                 "avatarSettingsId" -> {
                     //val intent = Intent(activity, AvatarActivity::class.java) // Call the AppIntro java class
                     //startActivity(intent)
-                    AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                    if (fragmentManager !== null) {
+                        AvatarViewDialog.newInstance().show(fragmentManager!!, "dialog")
+                    }
                     return true
                 }
                 "intro" -> {

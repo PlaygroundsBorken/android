@@ -12,14 +12,14 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.PersistableBundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.FragmentActivity
-import android.support.v4.app.FragmentManager
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.preference.PreferenceManager
+import android.preference.PreferenceManager
 import android.view.View
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
@@ -91,44 +91,9 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
-                for (location in locationResult.locations){
+                for (location in locationResult.locations) {
                     makeUseOfNewLocation(location)
                 }
-            }
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            ) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-                AlertDialog.Builder(this)
-                    .setTitle(R.string.title_location_permission)
-                    .setMessage(R.string.text_location_permission)
-                    .setPositiveButton(R.string.ok) { _, _ ->
-                        ActivityCompat.requestPermissions(
-                            this@BaseMapboxActivity,
-                            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                            MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-                        )
-                    }
-                    .create()
-                    .show()
-
-
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
-                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-                )
             }
         }
 
@@ -162,7 +127,9 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                     .setPositiveButton(R.string.ok) { _, _ ->
                         ActivityCompat.requestPermissions(
                             this@BaseMapboxActivity,
-                            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            ),
                             MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
                         )
                     }
@@ -174,7 +141,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
                 )
             }
@@ -305,9 +272,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 ).title(it.name).snippet(it.description.orEmpty()).icon(icon)
             )
 
-            if (!this.markerToPlayground.values.contains(it)) {
-                this.markerToPlayground[addMarker.id] = it
+            if (this.markerToPlayground.values.contains(it)) {
+                this.markerToPlayground.remove(addMarker.id)
             }
+            this.markerToPlayground[addMarker.id] = it
             this.playgroundsOnMap.add(it)
         }
 
@@ -369,17 +337,20 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             .get()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    this.autocompleteLocation = Playground.tryParsePlaygrounds(task.result!!)?.map {
 
-                        loadedPlaygrounds.add(it)
+                    if (task.result !== null) {
+                        this.autocompleteLocation = Playground.tryParsePlaygrounds(task.result!!)?.map {
 
-                        CarmenFeature.builder().text(it.name)
-                            .placeName(it.name)
-                            .geometry(it.location)
-                            .id(it.name)
-                            .properties(JsonObject())
-                            .build()
-                    }.orEmpty()
+                            loadedPlaygrounds.add(it)
+
+                            CarmenFeature.builder().text(it.name)
+                                .placeName(it.name)
+                                .geometry(it.location)
+                                .id(it.name)
+                                .properties(JsonObject())
+                                .build()
+                        }.orEmpty()
+                    }
 
                     if (map != null) {
                         addMarkersToMap(map!!, loadedPlaygrounds)
@@ -435,7 +406,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 // permission denied, boo! Disable the
                 // functionality that depends on this permission.
                 val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
-                with (sharedPreferences.edit()) {
+                with(sharedPreferences.edit()) {
                     putBoolean(getString(R.string.disabled_gps), true)
                     apply()
                 }
@@ -455,7 +426,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             avatarURL = activeUser.avatarURL
         }
 
-        loadedPlaygrounds.filter {playground ->
+        loadedPlaygrounds.filter { playground ->
             val playgroundLocation = Location("point B")
             playgroundLocation.latitude = playground.location.latitude()
             playgroundLocation.longitude = playground.location.longitude()
@@ -542,7 +513,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                         "Avatar ändern",
                         R.style.AlertButton,
                         View.OnClickListener {
-                            AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                            AvatarViewDialog.newInstance().show(supportFragmentManager, "dialog")
                         }
                     )
                     .show()
@@ -566,6 +537,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
         }
     }
+
     private fun startLocationUpdates() {
 
         if (!locationUpdatesAreAllowed) {
@@ -619,7 +591,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
                 )
             }
@@ -695,7 +667,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 // permission denied, boo! Disable the
                 // functionality that depends on this permission.
                 val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(baseContext)
-                with (sharedPreferences.edit()) {
+                with(sharedPreferences.edit()) {
                     putBoolean(getString(R.string.disabled_gps), true)
                     apply()
                 }

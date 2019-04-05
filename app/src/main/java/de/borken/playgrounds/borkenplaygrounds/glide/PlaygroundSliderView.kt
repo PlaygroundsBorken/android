@@ -1,10 +1,10 @@
 package de.borken.playgrounds.borkenplaygrounds.glide
 
 import android.content.Context
-import android.support.v7.widget.AppCompatImageView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.AppCompatImageView
 import com.glide.slider.library.R
 import com.glide.slider.library.SliderTypes.BaseSliderView
 

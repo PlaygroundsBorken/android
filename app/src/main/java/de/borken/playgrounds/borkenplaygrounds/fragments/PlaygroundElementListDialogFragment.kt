@@ -2,10 +2,10 @@ package de.borken.playgrounds.borkenplaygrounds.fragments
 
 import android.content.Context
 import android.os.Bundle
-import android.support.design.widget.BottomSheetDialogFragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListView

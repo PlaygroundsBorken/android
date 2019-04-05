@@ -7,9 +7,6 @@ import android.graphics.Color
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
-import android.support.design.widget.BottomSheetDialogFragment
-import android.support.v4.app.FragmentActivity
-import android.support.v4.app.FragmentManager
 import android.text.Html
 import android.text.InputType
 import android.view.LayoutInflater
@@ -18,9 +15,12 @@ import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.glide.slider.library.SliderLayout
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.tapadoo.alerter.Alerter
@@ -184,7 +184,9 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
                         "Avatar ändern",
                         R.style.AlertButton,
                         View.OnClickListener {
-                            AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                            if (fragmentManager !== null) {
+                                AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
+                            }
                         }
                     )
                     .show()

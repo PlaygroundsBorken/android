@@ -2,7 +2,6 @@ package de.borken.playgrounds.borkenplaygrounds.fragments
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +9,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
+import androidx.fragment.app.DialogFragment
 import com.bumptech.glide.Glide
 import de.borken.playgrounds.borkenplaygrounds.fetchAvatarSettings
 import de.borken.playgrounds.borkenplaygrounds.models.AvatarSetting
@@ -17,13 +17,6 @@ import de.borken.playgrounds.borkenplaygrounds.models.AvatarSettings
 import de.borken.playgrounds.borkenplaygrounds.models.User
 import de.borken.playgrounds.borkenplaygrounds.playgroundApp
 import kotlinx.android.synthetic.main.sample_avatar_view.*
-
-
-
-
-
-
-
 
 class AvatarViewDialog : DialogFragment() {
 
@@ -86,7 +79,8 @@ class AvatarViewDialog : DialogFragment() {
         }
     }
 
-    override fun onDismiss(dialog: DialogInterface?) {
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
 
         saveAvatar()
 
@@ -138,8 +132,9 @@ class AvatarViewDialog : DialogFragment() {
         }
 
         val spinner = Spinner(activity)
+
         val spinnerArrayAdapter =
-            ArrayAdapter<String>(activity, android.R.layout.simple_spinner_dropdown_item, spinnerArray)
+            ArrayAdapter<String>(context!!, android.R.layout.simple_spinner_dropdown_item, spinnerArray)
         spinner.adapter = spinnerArrayAdapter
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -149,11 +144,17 @@ class AvatarViewDialog : DialogFragment() {
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
 
-                val selectedValue = avatarSetting.options[id.toInt()].value
+                val index = id.toInt()
+                if (avatarSetting.options.size >= index) {
+                    val value = avatarSetting.options[index].value
 
-                if (avatarSettings !== null) {
-                    avatarSettings!!.selectAvatarSetting(avatarSetting.body_part, selectedValue)
-                    createAvatarUrl(avatarSettings!!)
+                    if (value.isNotEmpty()) {
+
+                        if (avatarSettings !== null) {
+                            avatarSettings!!.selectAvatarSetting(avatarSetting.body_part, value)
+                            createAvatarUrl(avatarSettings!!)
+                        }
+                    }
                 }
             }
         }
