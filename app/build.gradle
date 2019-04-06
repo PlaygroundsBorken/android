@@ -14,8 +14,8 @@ android {
         applicationId "de.borken.playgrounds.borkenplaygrounds"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 14
-        versionName '0.7.0'
+        versionCode 15
+        versionName '0.7.1'
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
     }
