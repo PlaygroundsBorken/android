@@ -63,16 +63,20 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     private var meMarker: Symbol? = null
     private var map: MapboxMap? = null
     private val markerToPlayground: MutableMap<Symbol, Playground> = mutableMapOf()
-    private val playgroundsOnMap = mutableSetOf<Playground>()
     private val loadedPlaygrounds = mutableListOf<Playground>()
     protected val codeAutocomplete = 1
-    protected lateinit var autocompleteLocation: List<CarmenFeature>
+    lateinit var autocompleteLocation: List<CarmenFeature>
     private lateinit var locationManager: LocationManager
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val _myPermisionsRequestInt: Int = 199
     private var locationUpdatesAreAllowed: Boolean = false
     private var symbolManager: SymbolManager? = null
     private val _myPermissionRequestLocation: Int = 99
+
+    fun autoCompleteIsInitialized(): Boolean {
+
+        return this::autocompleteLocation.isInitialized
+    }
 
     override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
         super.onCreate(savedInstanceState, persistentState)
@@ -184,11 +188,14 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                     .into<BitmapTarget>(object : BitmapTarget() {
                         override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
 
-                            style.addImage(
-                                _meMarkerIcon,
-                                resource,
-                                false
-                            )
+                            try {
+                                style.removeImage(_meMarkerIcon)
+                                style.addImage(
+                                    _meMarkerIcon,
+                                    resource,
+                                    false
+                                )
+                            } catch (e: Exception) {}
                         }
                     })
 
@@ -196,7 +203,13 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 symbolManager?.iconAllowOverlap = true
                 symbolManager?.textAllowOverlap = true
                 symbolManager?.addClickListener {
-                    val playground = this.markerToPlayground[it]
+                    val playgroundMap = this.markerToPlayground.filter {(symbol, _) ->
+                        symbol.id == it.id
+                    }
+                    var playground: Playground? = null
+                    if (playgroundMap.isNotEmpty()) {
+                        playground = playgroundMap.values.first()
+                    }
 
                     when {
                         playground !== null -> {
@@ -258,6 +271,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
                 task.addOnSuccessListener {
                     locationUpdatesAreAllowed = true
+                    startLocationUpdates()
                 }
 
                 task.addOnFailureListener { exception ->
@@ -286,8 +300,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     private fun addMarkersToMap(mapboxMap: MapboxMap, playgrounds: List<Playground>) {
         val builder = LatLngBounds.Builder()
 
-        val filteredPlaygrounds = playgrounds.filter { it !in playgroundsOnMap }
-        filteredPlaygrounds.forEach {
+        playgrounds.filter { playground ->
+            val filterValues = this.markerToPlayground.filterValues { it == playground }
+            filterValues.isEmpty()
+        }.forEach {
 
             val latLng = LatLng(
                 it.location.latitude(),
@@ -301,12 +317,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
             val symbol = symbolManager?.create(symbolOptions)
 
             if (symbol !== null) {
-                if (this.markerToPlayground.values.contains(it)) {
-                    this.markerToPlayground.remove(symbol)
-                }
                 this.markerToPlayground[symbol] = it
             }
-            this.playgroundsOnMap.add(it)
         }
 
         playgrounds.forEach {
@@ -317,9 +329,6 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
             builder.include(latLng)
         }
-
-        playgroundsOnMap.clear()
-        playgroundsOnMap.addAll(playgrounds)
 
         if (playgrounds.size == 1) {
             val location = playgrounds.first().location
@@ -348,13 +357,14 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
         markerToPlayground.keys.subtract(activeMarkerToPlayground.keys).forEach {
             it.iconOpacity = 0.0f
-            symbolManager?.update(it)
+            it.zIndex = 0
         }
 
         activeMarkerToPlayground.keys.forEach {
             it.iconOpacity = 1.0f
-            symbolManager?.update(it)
+            it.zIndex = 1000
         }
+        symbolManager?.update(markerToPlayground.keys.toList())
     }
 
     private fun initLocations() {
@@ -475,33 +485,12 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 .withLatLng(latLng)
                 .withIconImage(_meMarkerIcon)
                 .withIconSize(1f)
+                .withZIndex(1005)
 
-            symbolManager?.create(symbolOptions)
+            meMarker = symbolManager?.create(symbolOptions)
         } else {
             meMarker?.latLng = latLng
             symbolManager?.update(meMarker)
-        }
-
-        val builder = LatLngBounds.Builder()
-        this@BaseMapboxActivity.playgroundsOnMap.forEach {
-            builder.include(
-                LatLng(
-                    it.location.latitude(),
-                    it.location.longitude()
-                )
-            )
-        }
-
-        if (this@BaseMapboxActivity.playgroundsOnMap.size > 1) {
-            builder.include(latLng)
-            map?.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150))
-        } else {
-
-            val newCameraPosition = CameraPosition.Builder()
-                .target(latLng)
-                .zoom(14.0)
-                .build()
-            map?.animateCamera(CameraUpdateFactory.newCameraPosition(newCameraPosition), 4000)
         }
     }
 
@@ -543,8 +532,8 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         return LocationRequest.create()?.apply {
             interval = 10000
             fastestInterval = 5000
-            smallestDisplacement = 50.0f
-            priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            smallestDisplacement = 1.0f
         }
     }
 

@@ -171,7 +171,10 @@ class AvatarViewDialog : DialogFragment() {
 
         avatarSettings.avatarSetting.forEach { avatarSetting ->
 
-            avatarURL += '&' + avatarSetting.body_part + '=' + avatarSetting.options.first { it.selected }.id
+            val any = avatarSetting.options.any { it.selected }
+            if (any) {
+                avatarURL += '&' + avatarSetting.body_part + '=' + avatarSetting.options.first { it.selected }.id
+            }
         }
 
         setAvatar()

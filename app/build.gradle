@@ -14,8 +14,8 @@ android {
         applicationId "de.borken.playgrounds.borkenplaygrounds"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 15
-        versionName '0.7.1'
+        versionCode 17
+        versionName '0.7.3'
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
     }
@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-places-v7:0.8.0'
     implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-localization-v7:0.8.0'
     implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-offline-v7:0.4.0'
-    implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-annotation-v7:0.5.0'
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-annotation-v7:0.6.0'
     implementation 'com.google.firebase:firebase-core:16.0.8'
     testImplementation 'junit:junit:4.12'
     implementation 'com.google.firebase:firebase-firestore:18.2.0'

@@ -61,9 +61,10 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
                 .bbox(Point.fromLngLat(6.6, 51.6), Point.fromLngLat(7.0, 52.0))
                 .backgroundColor(Color.parseColor("#AAFFFFFF"))
 
-
-            autocompleteLocation.forEach { feature ->
-                placeOptions.addInjectedFeature(feature)
+            if (autoCompleteIsInitialized()) {
+                autocompleteLocation.forEach { feature ->
+                    placeOptions.addInjectedFeature(feature)
+                }
             }
 
             val options = placeOptions.build(PlaceOptions.MODE_CARDS)
