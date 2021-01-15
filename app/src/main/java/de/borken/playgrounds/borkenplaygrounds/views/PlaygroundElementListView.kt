@@ -13,11 +13,10 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import de.borken.playgrounds.borkenplaygrounds.R
+import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentPlaygroundelementListDialogItemBinding
 import de.borken.playgrounds.borkenplaygrounds.dp
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import de.borken.playgrounds.borkenplaygrounds.models.tryParsePlaygroundElements
-import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item.view.*
-
 
 class PlaygroundElementListView : RecyclerView {
 
@@ -108,11 +107,11 @@ class PlaygroundElementListView : RecyclerView {
         playgroundElementImageView.setPadding(padding, padding, padding, padding)
     }
 
-    private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
-        RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playgroundelement_list_dialog_item, parent, false)) {
+    private inner class ViewHolder(binding: FragmentPlaygroundelementListDialogItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-        internal val playgroundElementImageView: ImageView = itemView.playgroundElement
-        internal lateinit var playgroundElement: PlaygroundElement
+        val playgroundElementImageView: ImageView = binding.playgroundElement
+        lateinit var playgroundElement: PlaygroundElement
 
         init {
 
@@ -130,14 +129,16 @@ class PlaygroundElementListView : RecyclerView {
         }
     }
 
-    private inner class PlaygroundElementAdapter internal constructor() :
+    private inner class PlaygroundElementAdapter :
         RecyclerView.Adapter<ViewHolder>() {
 
-        internal lateinit var viewContext: Context
+        lateinit var viewContext: Context
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             viewContext = parent.context
-            return ViewHolder(LayoutInflater.from(parent.context), parent)
+            val layoutInflater = LayoutInflater.from(parent.context)
+            val binding = FragmentPlaygroundelementListDialogItemBinding.inflate(layoutInflater, parent, false)
+            return ViewHolder(binding)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {

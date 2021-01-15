@@ -11,13 +11,8 @@ class Playground(
     val name: String,
     val location: Point,
     val description: String? = "",
-    val age: String? = "",
     val rating: Long? = 0,
-    val ratingCount: Long? = 0,
-    val images: List<String> = emptyList(),
-    val upVotes: Int = 0,
-    val downVotes: Int = 0,
-    val description2: String? = ""
+    val images: List<String> = emptyList()
 ) : Serializable, Comparable<Playground> {
 
     override fun compareTo(other: Playground): Int {
@@ -95,7 +90,7 @@ class Playground(
 
                         playgroundHtml = description["html"] as? String
                     }
-                    var playgroundHtml2: String? = ""
+                    val playgroundHtml2: String = ""
                     /*if (description2.containsKey("html")) {
 
                         playgroundHtml2 = description2["html"] as? String
@@ -105,13 +100,8 @@ class Playground(
                         name,
                         Point.fromLngLat(lng.toDouble(), lat.toDouble()),
                         playgroundHtml.orEmpty(),
-                        age,
                         rating,
-                        ratingCount,
-                        imageList,
-                        upVotes,
-                        downVotes,
-                        playgroundHtml2.orEmpty()
+                        imageList
                     ).setList(playgroundElementList)
                 } else
                     null

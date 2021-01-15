@@ -9,55 +9,9 @@ class Remark(
     val text: String
 ) : Serializable {
 
-    val remarkee: User?
-        get() {
-            val settings = FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
-                .build()
-            val db = FirebaseFirestore.getInstance()
-            db.firestoreSettings = settings
-            val documents = db.collection("userRemarks")
-                .whereArrayContains("id", this.mRemarkee)
-                .get()
-                .result
-
-            return User.tryParse(documents)
-        }
-
-    val remarkedPlayground: Playground?
-        get() {
-            val settings = FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
-                .build()
-            val db = FirebaseFirestore.getInstance()
-            db.firestoreSettings = settings
-            val documents = db.collection("playgrounds")
-                .whereEqualTo("id", this.mRemarkedPlayground)
-                .get()
-                .result
-
-            val playgrounds = Playground.tryParsePlaygrounds(documents)
-
-            return if (playgrounds.isNullOrEmpty() || playgrounds.size > 1) {
-                null
-            } else {
-                playgrounds[0]
-            }
-        }
-
     companion object {
-        fun tryParseRemark(result: QuerySnapshot?): Remark? {
 
-            val remarks = tryParseRemarks(result)
-
-            return if (remarks.size > 1) {
-                null
-            } else {
-                remarks[0]
-            }
-        }
-
-        fun tryParseRemarks(documents: QuerySnapshot?): List<Remark> {
+        private fun tryParseRemarks(documents: QuerySnapshot?): List<Remark> {
 
             val remarks = documents?.documents?.mapNotNull { documentSnapshot ->
 

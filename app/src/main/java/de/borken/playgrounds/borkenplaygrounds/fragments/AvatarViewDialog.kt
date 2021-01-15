@@ -1,6 +1,8 @@
 package de.borken.playgrounds.borkenplaygrounds.fragments
 
+import android.R
 import android.content.DialogInterface
+import android.graphics.drawable.PictureDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,21 +13,35 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import androidx.fragment.app.DialogFragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions.withCrossFade
+import de.borken.playgrounds.borkenplaygrounds.databinding.SampleAvatarViewBinding
 import de.borken.playgrounds.borkenplaygrounds.fetchAvatarSettings
+import de.borken.playgrounds.borkenplaygrounds.glide.GlideApp
 import de.borken.playgrounds.borkenplaygrounds.models.AvatarSetting
 import de.borken.playgrounds.borkenplaygrounds.models.AvatarSettings
 import de.borken.playgrounds.borkenplaygrounds.models.User
 import de.borken.playgrounds.borkenplaygrounds.playgroundApp
-import kotlinx.android.synthetic.main.sample_avatar_view.*
+
 
 class AvatarViewDialog : DialogFragment() {
+    private var _binding: SampleAvatarViewBinding? = null
+    // This property is only valid between onCreateView and
+// onDestroyView.
+    private val binding get() = _binding!!
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
-        return inflater.inflate(de.borken.playgrounds.borkenplaygrounds.R.layout.sample_avatar_view, container, false)
+        _binding = SampleAvatarViewBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -35,6 +51,7 @@ class AvatarViewDialog : DialogFragment() {
         avatarSettings = activity?.applicationContext?.fetchAvatarSettings
         if (activeUser?.avatarURL !== null) {
             avatarURL = activeUser?.avatarURL!!
+            avatarURL = avatarURL.replace("/png/260", "/", true);
         }
 
         var visitedPlaygrounds = activeUser?.mVisitedPlaygrounds?.size
@@ -43,6 +60,7 @@ class AvatarViewDialog : DialogFragment() {
 
             visitedPlaygrounds = 0
         }
+        visitedPlaygrounds = 100
         val amount = steps[visitedPlaygrounds]
         avatarSettings?.setFromAvatarUrl(avatarURL)
         avatarSettings?.avatarSetting?.forEachIndexed { index, avatarSetting ->
@@ -52,16 +70,16 @@ class AvatarViewDialog : DialogFragment() {
 
                 if (amount != null) {
                     if (amount >= index) {
-                        createSpinner(avatarSetting, avatarSettingsWrapper)
+                        createSpinner(avatarSetting, binding.avatarSettingsWrapper)
                     }
                 } else {
-                    createSpinner(avatarSetting, avatarSettingsWrapper)
+                    createSpinner(avatarSetting, binding.avatarSettingsWrapper)
                 }
             }
         }
 
         setAvatar()
-        generateAvatar.setOnClickListener {
+        binding.generateAvatar.setOnClickListener {
 
             saveAvatar()
             dismiss()
@@ -102,8 +120,8 @@ class AvatarViewDialog : DialogFragment() {
             }
 
         fun getDefaultAvatarURL(): String {
-            var avatarURL = "https://avataaars.io/png/260?"
-            avatarURL += "&topType=NoHair"
+            var avatarURL = "https://avataaars.io/?"
+            avatarURL += "topType=NoHair"
             avatarURL += "&accessoriesType=Blank"
             avatarURL += "&clotheType=BlazerShirt"
             avatarURL += "&eyeType=Default"
@@ -112,11 +130,21 @@ class AvatarViewDialog : DialogFragment() {
             return avatarURL
         }
     }
-    private var avatarURL: String = AvatarViewDialog.getDefaultAvatarURL()
+    private var avatarURL: String = getDefaultAvatarURL()
     private var activeUser: User? = null
     private var avatarSettings: AvatarSettings? = null
 
-    private val steps = hashMapOf(1 to 1, 2 to 2, 3 to 3, 5 to 4, 8 to 5, 11 to 6, 15 to 7, 21 to 8, 25 to 9)
+    private val steps = hashMapOf(
+        1 to 1,
+        2 to 2,
+        3 to 3,
+        5 to 4,
+        8 to 5,
+        11 to 6,
+        15 to 7,
+        21 to 8,
+        25 to 9
+    )
 
     private fun createSpinner(avatarSetting: AvatarSetting, wrapper: LinearLayout) {
 
@@ -134,7 +162,11 @@ class AvatarViewDialog : DialogFragment() {
         val spinner = Spinner(activity)
 
         val spinnerArrayAdapter =
-            ArrayAdapter<String>(context!!, android.R.layout.simple_spinner_dropdown_item, spinnerArray)
+            ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                spinnerArray
+            )
         spinner.adapter = spinnerArrayAdapter
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -142,7 +174,12 @@ class AvatarViewDialog : DialogFragment() {
 
             }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
 
                 val index = id.toInt()
                 if (avatarSetting.options.size >= index) {
@@ -167,7 +204,7 @@ class AvatarViewDialog : DialogFragment() {
 
     private fun createAvatarUrl(avatarSettings: AvatarSettings) {
 
-        avatarURL = "https://avataaars.io/png/260?"
+        avatarURL = "https://avataaars.io/?"
 
         avatarSettings.avatarSetting.forEach { avatarSetting ->
 
@@ -183,7 +220,7 @@ class AvatarViewDialog : DialogFragment() {
     private fun setAvatar() {
         Glide.with(this /* context */)
             .load(avatarURL)
-            .into(avatarImageView)
+            .into(binding.avatarImageView)
     }
 
     private fun saveAvatar() {

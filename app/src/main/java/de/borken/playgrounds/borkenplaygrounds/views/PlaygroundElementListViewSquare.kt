@@ -9,10 +9,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
-import de.borken.playgrounds.borkenplaygrounds.R
+import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentPlaygroundelementListDialogItemSquareBinding
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
-import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog_item_square.view.*
 
 
 class PlaygroundElementListViewSquare : RecyclerView, Playground.PlaygroundElementsListener {
@@ -29,7 +28,11 @@ class PlaygroundElementListViewSquare : RecyclerView, Playground.PlaygroundEleme
 
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(
+        context,
+        attrs,
+        defStyle
+    )
 
     fun playgroundElementAdded(element: PlaygroundElement) {
         this.playgroundElements.add(element)
@@ -37,24 +40,30 @@ class PlaygroundElementListViewSquare : RecyclerView, Playground.PlaygroundEleme
         layoutManager = LinearLayoutManager(context, HORIZONTAL, false)
     }
 
-    private inner class ViewHolder internal constructor(inflater: LayoutInflater, parent: ViewGroup) :
-        RecyclerView.ViewHolder(inflater.inflate(R.layout.fragment_playgroundelement_list_dialog_item_square, parent, false)) {
+    private inner class ViewHolder(binding: FragmentPlaygroundelementListDialogItemSquareBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-        internal val playgroundElementImageView: ImageView = itemView.playgroundElementSquare
-        internal lateinit var playgroundElement: PlaygroundElement
+        val playgroundElementImageView: ImageView = binding.playgroundElementSquare
+        lateinit var playgroundElement: PlaygroundElement
 
-        init {
-        }
     }
 
-    private inner class PlaygroundElementSquareAdapter internal constructor(private val mItemCount: Int) :
+    private inner class PlaygroundElementSquareAdapter(private val mItemCount: Int) :
         RecyclerView.Adapter<ViewHolder>() {
 
-        internal lateinit var viewContext: Context
+        lateinit var viewContext: Context
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             viewContext = parent.context
-            return ViewHolder(LayoutInflater.from(parent.context), parent)
+            val layoutInflater = LayoutInflater.from(parent.context)
+            val itemBinding: FragmentPlaygroundelementListDialogItemSquareBinding =
+                FragmentPlaygroundelementListDialogItemSquareBinding.inflate(
+                    layoutInflater,
+                    parent,
+                    false
+                )
+
+            return ViewHolder(itemBinding)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {

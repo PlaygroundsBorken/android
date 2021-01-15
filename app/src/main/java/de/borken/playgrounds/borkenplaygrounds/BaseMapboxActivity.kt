@@ -13,7 +13,6 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.preference.PreferenceManager
-import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -42,12 +41,12 @@ import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin
 import com.mapbox.mapboxsdk.plugins.localization.MapLocale
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.tapadoo.alerter.Alerter
+import de.borken.playgrounds.borkenplaygrounds.databinding.ActivityPlaygroundBinding
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.BitmapTarget
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
-import kotlinx.android.synthetic.main.activity_playground.*
 
 open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
@@ -72,6 +71,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
     private var locationUpdatesAreAllowed: Boolean = false
     private var symbolManager: SymbolManager? = null
     private val _myPermissionRequestLocation: Int = 99
+    protected lateinit var binding: ActivityPlaygroundBinding
 
     fun autoCompleteIsInitialized(): Boolean {
 
@@ -92,7 +92,9 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
         }
         Mapbox.getInstance(this, accessToken)
 
-        setContentView(R.layout.activity_playground)
+        binding = ActivityPlaygroundBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationCallback = object : LocationCallback() {
@@ -165,11 +167,9 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
             mapboxUrl = getString(R.string.MAPBOX_STYLE)
         }
-        Mapbox.getInstance(this, accessToken)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync { mapboxMap ->
+        binding.mapView.onCreate(savedInstanceState)
+        binding.mapView.getMapAsync { mapboxMap ->
             map = mapboxMap
-            mapboxMap.setStyle(mapboxUrl)
 
             mapboxMap.setStyle(mapboxUrl) { style ->
                 style.addImage(
@@ -199,7 +199,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                         }
                     })
 
-                symbolManager = SymbolManager(mapView, mapboxMap, style)
+                symbolManager = SymbolManager(binding.mapView, mapboxMap, style)
                 symbolManager?.iconAllowOverlap = true
                 symbolManager?.textAllowOverlap = true
                 symbolManager?.addClickListener {
@@ -214,6 +214,7 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                     when {
                         playground !== null -> {
                             PlaygroundListDialogFragment.newInstance(playground).show(supportFragmentManager, "dialog")
+                            true
                         }
                         meMarker?.id == it.id -> {
                             try {
@@ -234,11 +235,13 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                                 }
                             } catch (e: Exception) {
                             }
+                            true
                         }
+                        else -> true
                     }
                 }
 
-                val localizationPlugin = LocalizationPlugin(mapView!!, mapboxMap, style)
+                val localizationPlugin = LocalizationPlugin(binding.mapView, mapboxMap, style)
                 localizationPlugin.setMapLanguage(MapLocale(MapLocale.GERMAN))
 
                 try {
@@ -357,12 +360,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
         markerToPlayground.keys.subtract(activeMarkerToPlayground.keys).forEach {
             it.iconOpacity = 0.0f
-            it.zIndex = 0
         }
 
         activeMarkerToPlayground.keys.forEach {
             it.iconOpacity = 1.0f
-            it.zIndex = 1000
         }
         symbolManager?.update(markerToPlayground.keys.toList())
     }
@@ -485,7 +486,6 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 .withLatLng(latLng)
                 .withIconImage(_meMarkerIcon)
                 .withIconSize(1f)
-                .withZIndex(1005)
 
             meMarker = symbolManager?.create(symbolOptions)
         } else {
@@ -510,11 +510,10 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                     .enableSwipeToDismiss()
                     .addButton(
                         "Avatar ändern",
-                        R.style.AlertButton,
-                        View.OnClickListener {
-                            AvatarViewDialog.newInstance().show(supportFragmentManager, "dialog")
-                        }
-                    )
+                        R.style.AlertButton
+                    ) {
+                        AvatarViewDialog.newInstance().show(supportFragmentManager, "dialog")
+                    }
                     .show()
             }
         } catch (exception: NoSuchElementException) {
@@ -595,59 +594,49 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
     public override fun onStart() {
         super.onStart()
-        mapView?.onStart()
+        binding.mapView.onStart()
     }
 
     public override fun onResume() {
         super.onResume()
-        mapView?.onResume()
+        binding.mapView.onResume()
 
         startLocationUpdates()
     }
 
     public override fun onPause() {
         super.onPause()
-        mapView?.onPause()
+        binding.mapView.onPause()
         stopLocationUpdates()
     }
 
     public override fun onStop() {
         super.onStop()
-        mapView?.onStop()
+        binding.mapView.onStop()
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mapView?.onLowMemory()
+        binding.mapView.onLowMemory()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mapView?.onDestroy()
+        binding.mapView.onDestroy()
 
         locationManager.removeUpdates(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        mapView?.onSaveInstanceState(outState)
+        binding.mapView.onSaveInstanceState(outState)
     }
 
-
-    override fun onLocationChanged(location: Location?) {
-
-        if (location !== null) {
-            makeUseOfNewLocation(location)
-        }
+    override fun onLocationChanged(location: Location) {
+        makeUseOfNewLocation(location)
     }
 
     override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {
-    }
-
-    override fun onProviderEnabled(p0: String?) {
-    }
-
-    override fun onProviderDisabled(p0: String?) {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

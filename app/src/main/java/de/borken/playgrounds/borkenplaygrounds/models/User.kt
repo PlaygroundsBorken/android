@@ -10,7 +10,6 @@ import java.io.Serializable
 
 class User(
     val documentId: String,
-    val deviceId: String,
     var avatarURL: String
 
 ) : Serializable {
@@ -61,14 +60,14 @@ class User(
             db.firestoreSettings = settings
 
             db.collection("users").add(
-                User.newUser(
+                newUser(
                     android_ID
                 )
             ).addOnSuccessListener { documentReference ->
 
                 documentReference.get().addOnSuccessListener {
 
-                    val tryParseSingleDocument = User.tryParseSingleDocument(it)
+                    val tryParseSingleDocument = tryParseSingleDocument(it)
                     userCreated.userIsCreated(tryParseSingleDocument)
                 }.addOnFailureListener {
                     userCreated.userIsCreated(null)
@@ -107,7 +106,6 @@ class User(
             return if (!deviceId.isNullOrEmpty())
                 User(
                     documentSnapshot.id,
-                    deviceId,
                     avatarURL
                 ).setLists(downVotedPlaygrounds, upVotedPlaygrounds, userRemarks, visitedPlaygrounds)
             else
@@ -115,7 +113,7 @@ class User(
         }
     }
 
-    var mUserRemarks: MutableList<String> = mutableListOf()
+    private var mUserRemarks: MutableList<String> = mutableListOf()
 
     var mUpVotedPlaygrounds: MutableList<String> = mutableListOf()
 

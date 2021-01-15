@@ -48,7 +48,7 @@ class SettingsActivity : AppCompatActivity() {
         override fun onPreferenceTreeClick(preference: androidx.preference.Preference?): Boolean {
 
             activity?.getPreferences(Context.MODE_PRIVATE)
-            when(preference?.key) {
+            when (preference?.key) {
                 "sponsor" -> {
 
                     val viewIntent = Intent(activity, SponsorActivity::class.java)
@@ -61,21 +61,19 @@ class SettingsActivity : AppCompatActivity() {
                     return true
                 }
                 "avatarSettingsId" -> {
-                    //val intent = Intent(activity, AvatarActivity::class.java) // Call the AppIntro java class
-                    //startActivity(intent)
-                    if (fragmentManager !== null) {
-                        AvatarViewDialog.newInstance().show(fragmentManager!!, "dialog")
-                    }
+                    AvatarViewDialog.newInstance().show(parentFragmentManager, "dialog")
                     return true
                 }
                 "intro" -> {
 
-                    val intent = Intent(activity, IntroActivity::class.java) // Call the AppIntro java class
+                    val intent =
+                        Intent(activity, IntroActivity::class.java) // Call the AppIntro java class
                     startActivity(intent)
                     return true
                 }
                 "remark_link" -> {
-                    val url = "https://www.borken.de/buergerservice/ideen-und-beschwerdemanagement/ideen-u-beschwerdemanagement.html"
+                    val url =
+                        "https://www.borken.de/buergerservice/ideen-und-beschwerdemanagement/ideen-u-beschwerdemanagement.html"
                     val i = Intent(Intent.ACTION_VIEW)
                     i.data = Uri.parse(url)
                     startActivity(i)
@@ -104,7 +102,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         override fun onCreatePreferences(p0: Bundle?, p1: String?) {
-            setPreferencesFromResource(R.xml.pref_headers,null)
+            setPreferencesFromResource(R.xml.pref_headers, null)
         }
     }
 }

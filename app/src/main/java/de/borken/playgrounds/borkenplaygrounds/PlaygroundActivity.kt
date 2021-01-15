@@ -9,7 +9,6 @@ import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundElementListDialogFragment
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
-import kotlinx.android.synthetic.main.activity_playground.*
 
 
 class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFragment.Listener {
@@ -35,7 +34,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
         initFilterFab()
 
-        moreButton.setOnClickListener {
+        binding.moreButton.setOnClickListener {
 
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
@@ -44,7 +43,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
     private fun initFilterFab() {
 
-        filterButton.setOnClickListener {
+        binding.filterButton.setOnClickListener {
 
             PlaygroundElementListDialogFragment.newInstance(selectedElements.orEmpty()).show(supportFragmentManager, "dialog")
         }
@@ -52,7 +51,7 @@ class PlaygroundActivity : BaseMapboxActivity(), PlaygroundElementListDialogFrag
 
     private fun initSearchFab() {
 
-        searchButton?.setOnClickListener {
+        binding.searchButton.setOnClickListener {
 
             val placeOptions = PlaceOptions.builder()
                 .limit(10)

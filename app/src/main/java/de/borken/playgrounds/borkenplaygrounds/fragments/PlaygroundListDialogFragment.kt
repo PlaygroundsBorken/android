@@ -26,6 +26,7 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.tapadoo.alerter.Alerter
 import de.borken.playgrounds.borkenplaygrounds.R
 import de.borken.playgrounds.borkenplaygrounds.animation.ZoomAnimator
+import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentPlaygroundListDialogBinding
 import de.borken.playgrounds.borkenplaygrounds.fetchPlaygroundNotifications
 import de.borken.playgrounds.borkenplaygrounds.glide.PlaygroundSliderView
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
@@ -33,7 +34,6 @@ import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import de.borken.playgrounds.borkenplaygrounds.models.Remark
 import de.borken.playgrounds.borkenplaygrounds.models.User
 import de.borken.playgrounds.borkenplaygrounds.playgroundApp
-import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
 
 
 /**
@@ -48,21 +48,30 @@ import kotlinx.android.synthetic.main.fragment_playground_list_dialog.*
  */
 class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.PlaygroundElementsListener {
 
+    private var _binding: FragmentPlaygroundListDialogBinding? = null
+    // This property is only valid between onCreateView and
+// onDestroyView.
+    private val binding get() = _binding!!
+
     override fun playgroundElementsLoaded(playgroundElements: List<PlaygroundElement>) {
 
         playgroundElements.forEach {
-            if (playground_elements != null)
-                playground_elements.playgroundElementAdded(it)
+            binding.playgroundElements.playgroundElementAdded(it)
         }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         // Retrieve and cache the system's default "short" animation time.
+        _binding = FragmentPlaygroundListDialogBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        return inflater.inflate(R.layout.fragment_playground_list_dialog, container, false)
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private var playground: Playground? = null
@@ -74,7 +83,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
         this.playground = arguments?.getSerializable("PLAYGROUND_LIST") as? Playground
 
-        playground_name.text = playground?.name
+        binding.playgroundName.text = playground?.name
 
         setPlaygroundDescription()
 
@@ -90,7 +99,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
         setupDownVotingButton(activeUser)
 
-        playground_remarks.setOnClickListener {
+        binding.playgroundRemarks.setOnClickListener {
             remarksClickHandler(view)
         }
 
@@ -104,10 +113,10 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         val isDownVoted = downVotedPlaygrounds?.contains(playground?.id)
         if (isDownVoted != null && isDownVoted) {
 
-            downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
+            binding.downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
         }
 
-        downvote.setOnClickListener {
+        binding.downvote.setOnClickListener {
             voteClickHandler(false)
         }
     }
@@ -117,9 +126,9 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         val isUpVoted = upVotedPlaygrounds?.contains(playground?.id)
         if (isUpVoted != null && isUpVoted) {
 
-            upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
+            binding.upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
         }
-        upvote.setOnClickListener {
+        binding.upvote.setOnClickListener {
             voteClickHandler(true)
         }
     }
@@ -127,7 +136,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
     @SuppressLint("MissingPermission")
     private fun setupGeoFencing(activeUser: User?) {
         if (activity != null)
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity!!)
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         if (fusedLocationClient != null) {
 
@@ -144,7 +153,7 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
                         return@addOnSuccessListener
                     }
 
-                    playground_button_container.visibility = VISIBLE
+                    binding.playgroundButtonContainer.visibility = VISIBLE
 
                     val playgroundAlreadyVisited = activeUser?.mVisitedPlaygrounds?.contains(playground?.id)
                     if (playgroundAlreadyVisited === null || playgroundAlreadyVisited || playground !== null) {
@@ -158,8 +167,8 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
                         showNotificationAlert(
                             activeUser.mVisitedPlaygrounds.count(),
-                            activity!!,
-                            fragmentManager
+                            requireActivity(),
+                            parentFragmentManager
                         )
                     }
                 }
@@ -182,13 +191,12 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
                     .enableSwipeToDismiss()
                     .addButton(
                         "Avatar ändern",
-                        R.style.AlertButton,
-                        View.OnClickListener {
-                            if (fragmentManager !== null) {
-                                AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
-                            }
+                        R.style.AlertButton
+                    ) {
+                        if (fragmentManager !== null) {
+                            AvatarViewDialog.newInstance().show(fragmentManager, "dialog")
                         }
-                    )
+                    }
                     .show()
             }
         } catch (exception: NoSuchElementException) {
@@ -207,33 +215,33 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
             sliderView.setOnSliderClickListener {
                 it as PlaygroundSliderView
 
-                ZoomAnimator(this.context!!).zoomImageFromThumb(
-                    expanded_image,
+                ZoomAnimator(this.requireContext()).zoomImageFromThumb(
+                    binding.expandedImage,
                     it.imageView,
                     image,
-                    activity!!.findViewById(R.id.container),
-                    list_item_container
+                    requireActivity().findViewById(R.id.container),
+                    binding.listItemContainer
                 )
             }
 
-            playground_images_slider.addSlider(sliderView)
+            binding.playgroundImagesSlider.addSlider(sliderView)
         }
 
-        playground_images_slider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
-        playground_images_slider.setDuration(10000)
+        binding.playgroundImagesSlider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom)
+        binding.playgroundImagesSlider.setDuration(10000)
     }
 
     private fun setPlaygroundRating() {
         if (playground?.rating?.toFloat() !== null)
-            playground_rating.rating = playground!!.rating!!.toFloat()
+            binding.playgroundRating.rating = playground!!.rating!!.toFloat()
     }
 
     private fun setPlaygroundDescription() {
         val description = playground?.description.orEmpty().replace("<li>", "&#8226;&nbsp;").replace("</li>", "<br/>")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            playground_description.text = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT)
+            binding.playgroundDescription.text = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT)
         } else {
-            playground_description.text = Html.fromHtml(description)
+            binding.playgroundDescription.text = Html.fromHtml(description)
         }
     }
 
@@ -250,14 +258,14 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
 
             upVotedPlaygrounds?.add(playground!!.id)
             downVotedPlaygrounds?.remove(playground!!.id)
-            upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
-            downvote.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
+            binding.upvote.backgroundTintList = ColorStateList.valueOf(Color.GREEN)
+            binding.downvote.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
 
         } else {
             downVotedPlaygrounds?.add(playground!!.id)
             upVotedPlaygrounds?.remove(playground!!.id)
-            upvote.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
-            downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
+            binding.upvote.backgroundTintList = ColorStateList.valueOf(Color.GRAY)
+            binding.downvote.backgroundTintList = ColorStateList.valueOf(Color.RED)
         }
         activeUser?.update()
     }
@@ -270,9 +278,9 @@ class PlaygroundListDialogFragment : BottomSheetDialogFragment(), Playground.Pla
         val container = FrameLayout(view.context)
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         params.leftMargin =
-            resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
+            resources.getDimensionPixelSize(R.dimen.dialog_margin)
         params.rightMargin =
-            resources.getDimensionPixelSize(de.borken.playgrounds.borkenplaygrounds.R.dimen.dialog_margin)
+            resources.getDimensionPixelSize(R.dimen.dialog_margin)
         input.layoutParams = params
         input.inputType = InputType.TYPE_CLASS_TEXT
         container.addView(input)

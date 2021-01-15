@@ -6,10 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import de.borken.playgrounds.borkenplaygrounds.R
+import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentPlaygroundelementListDialogBinding
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
 import de.borken.playgrounds.borkenplaygrounds.views.PlaygroundElementListView
-import kotlinx.android.synthetic.main.fragment_playgroundelement_list_dialog.*
 import java.io.Serializable
 
 /**
@@ -27,26 +26,36 @@ class PlaygroundElementListDialogFragment : BottomSheetDialogFragment(), Playgro
 
     private var selectedElements: MutableSet<PlaygroundElement> = mutableSetOf()
     private var mListener: Listener? = null
+    private var _binding: FragmentPlaygroundelementListDialogBinding? = null
+    // This property is only valid between onCreateView and
+// onDestroyView.
+    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_playgroundelement_list_dialog, container, false)
+    ): View {
+        _binding = FragmentPlaygroundelementListDialogBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         val playgroundList = arguments?.getSerializable("playground_element") as? List<*>
 
-        selectedElements.addAll(playgroundList?.filter { it is PlaygroundElement }?.map {
-            it as PlaygroundElement
+        selectedElements.addAll(playgroundList?.filterIsInstance<PlaygroundElement>()?.map {
+            it
         }.orEmpty())
         
         if (selectedElements.isNullOrEmpty())
-            list.setup(null, this)
+            binding.list.setup(null, this)
         else
-            list.setup(selectedElements.toList(), this)
+            binding.list.setup(selectedElements.toList(), this)
     }
 
     override fun onAttach(context: Context) {

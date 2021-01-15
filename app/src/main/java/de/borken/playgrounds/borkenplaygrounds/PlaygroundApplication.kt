@@ -24,25 +24,10 @@ class PlaygroundApplication : MultiDexApplication() {
 
         val configSettings = FirebaseRemoteConfigSettings.Builder()
             .build()
-        remoteConfig.setConfigSettings(configSettings)
-        remoteConfig.setDefaults(R.xml.remote_config_defaults)
 
-        val isUsingDeveloperMode = remoteConfig.info.configSettings.isDeveloperModeEnabled
-
-        // If your app is using developer mode, cacheExpiration is set to 0, so each fetch will
-        // retrieve values from the service.
-        val cacheExpiration: Long = if (isUsingDeveloperMode) {
-            0
-        } else {
-            3600 // 1 hour in seconds.
-        }
-
-        remoteConfig.fetch(cacheExpiration).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-
-                remoteConfig.activateFetched()
-            }
-        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+        remoteConfig.fetchAndActivate()
     }
 
     fun fetchByString(name: String): String {
@@ -58,10 +43,6 @@ class PlaygroundApplication : MultiDexApplication() {
         const val avatar_settings = "avatar_settings"
         const val rules = "rules"
         const val playground_notifications = "playground_notifications"
-        const val impressum = "impressum"
-        const val privacyPolicy = "privacy_policy"
-
-
     }
 }
 

@@ -14,12 +14,8 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import de.borken.playgrounds.borkenplaygrounds.databinding.ActivitySplashScreenBinding
 import de.borken.playgrounds.borkenplaygrounds.models.User
-import kotlinx.android.synthetic.main.activity_splash_screen.*
-
-
-
-
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -27,31 +23,33 @@ import kotlinx.android.synthetic.main.activity_splash_screen.*
  */
 class SplashScreen : AppCompatActivity(), User.UserCreated {
     private lateinit var auth: FirebaseAuth
+    private lateinit var binding: ActivitySplashScreenBinding
 
     override fun userIsCreated(user: User?) {
         applicationContext.playgroundApp.activeUser = user
-        progressBar.progress = 90
+        binding.progressBar.progress = 90
         finalizeSplashScreen()
     }
 
     @SuppressLint("HardwareIds")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivitySplashScreenBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
-        setContentView(R.layout.activity_splash_screen)
-
-        progressBar.progress = 0
+        binding.progressBar.progress = 0
 
         Glide.with(this /* context */)
             .load("https://res.cloudinary.com/tbuning/image/upload/c_scale,h_800/v1543067149/badges/Logo-Turmhaus.webp")
-            .into(imageView)
-        progressBar.progress = 4
+            .into(binding.imageView)
+        binding.progressBar.progress = 4
         val deviceId = Settings.Secure.getString(
             contentResolver,
             Settings.Secure.ANDROID_ID
         )
 
-        rules.text = application.fetchRules
+        binding.rules.text = application.fetchRules
 
         auth = FirebaseAuth.getInstance()
 
@@ -63,18 +61,18 @@ class SplashScreen : AppCompatActivity(), User.UserCreated {
                         .build()
                     val db = FirebaseFirestore.getInstance()
                     db.firestoreSettings = settings
-                    progressBar.progress = 6
+                    binding.progressBar.progress = 6
                     db.collection("users")
                         .whereEqualTo("deviceId", deviceId)
                         .get()
                         .addOnSuccessListener {
-                            progressBar.progress = 30
+                            binding.progressBar.progress = 30
                             val user = User.tryParse(it)
                             if (user == null) {
-                                progressBar.progress = 50
+                                binding.progressBar.progress = 50
                                 User.createNewUser(deviceId, this)
                             } else {
-                                progressBar.progress = 90
+                                binding.progressBar.progress = 90
                                 applicationContext.playgroundApp.activeUser = user
                             }
                             requestPermission()
@@ -131,26 +129,11 @@ class SplashScreen : AppCompatActivity(), User.UserCreated {
         requestCode: Int,
         permissions: Array<String>, grantResults: IntArray
     ) {
-        when (requestCode) {
-            permissionRequestCoarseLocation -> {
-                // If request is cancelled, the result arrays are empty.
-                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-
-                } else {
-                }
-                return
-            }
-
-            // Add other 'when' lines to check for other
-            // permissions this app might request.
-            else -> {
-            }
-        }
         finalizeSplashScreen()
     }
 
     private fun finalizeSplashScreen() {
-        progressBar.progress = 100
+        binding.progressBar.progress = 100
 
         val intent = Intent(
             applicationContext,

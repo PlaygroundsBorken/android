@@ -7,8 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
-import de.borken.playgrounds.borkenplaygrounds.R
-import kotlinx.android.synthetic.main.fragment_glide_image.*
+import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentGlideImageBinding
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -29,21 +28,31 @@ class GlideImageFragment : Fragment() {
             slideUrl = it.getString(ARG_PARAM1)
         }
     }
+    private var _binding: FragmentGlideImageBinding? = null
+    // This property is only valid between onCreateView and
+// onDestroyView.
+    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_glide_image, container, false)
+    ): View {
+        _binding = FragmentGlideImageBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         if (slideUrl !== null && activity !== null) {
-            Glide.with(activity!! /* context */)
+            Glide.with(requireActivity() /* context */)
                 .load(slideUrl)
-                .into(slideImage)
+                .into(binding.slideImage)
         }
     }
 

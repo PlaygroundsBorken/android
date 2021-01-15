@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatImageView
 import com.glide.slider.library.R
-import com.glide.slider.library.SliderTypes.BaseSliderView
+import com.glide.slider.library.slidertypes.BaseSliderView
 
 class PlaygroundSliderView(context: Context) : BaseSliderView(context) {
 
