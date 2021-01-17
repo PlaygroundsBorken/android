@@ -37,6 +37,9 @@ android {
             abortOnError false
         }
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
@@ -67,6 +70,9 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth:20.0.2'
     implementation 'androidx.preference:preference:1.1.1'
     implementation 'androidx.preference:preference-ktx:1.1.1'
+    implementation 'com.caverock:androidsvg-aar:1.4'
+    implementation "io.coil-kt:coil:1.1.1"
+    implementation "io.coil-kt:coil-svg:1.1.1"
 }
 
 apply plugin: "com.google.gms.google-services"

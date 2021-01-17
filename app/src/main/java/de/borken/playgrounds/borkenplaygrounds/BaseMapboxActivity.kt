@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
+import android.graphics.drawable.PictureDrawable
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -17,9 +17,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.FragmentActivity
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.transition.Transition
+import coil.ImageLoader
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
@@ -44,12 +47,21 @@ import com.tapadoo.alerter.Alerter
 import de.borken.playgrounds.borkenplaygrounds.databinding.ActivityPlaygroundBinding
 import de.borken.playgrounds.borkenplaygrounds.fragments.AvatarViewDialog
 import de.borken.playgrounds.borkenplaygrounds.fragments.PlaygroundListDialogFragment
-import de.borken.playgrounds.borkenplaygrounds.models.BitmapTarget
+import de.borken.playgrounds.borkenplaygrounds.glide.GlideRequest
 import de.borken.playgrounds.borkenplaygrounds.models.Playground
 import de.borken.playgrounds.borkenplaygrounds.models.PlaygroundElement
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
+open class BaseMapboxActivity : AppCompatActivity(), LocationListener, CoroutineScope {
+    private var job: Job = Job()
 
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
+    private lateinit var requestBuilder: GlideRequest<PictureDrawable>
     private val _meMarkerIcon = "memarker"
     private val _playgroundMarkerIcon = "playground"
     private val _boundCornerNE = LatLng(52.0, 7.0)
@@ -85,6 +97,12 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val imageLoader = ImageLoader.Builder(this)
+            .componentRegistry {
+                add(SvgDecoder(this@BaseMapboxActivity))
+            }
+            .build()
 
         var accessToken = this.applicationContext.fetchMapboxAccessToken
         if (accessToken.isEmpty()) {
@@ -182,22 +200,22 @@ open class BaseMapboxActivity : AppCompatActivity(), LocationListener {
                 if (activeUser?.avatarURL !== null) {
                     avatarURL = activeUser.avatarURL
                 }
-                Glide.with(this /* context */)
-                    .asBitmap()
-                    .load(avatarURL)
-                    .into<BitmapTarget>(object : BitmapTarget() {
-                        override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
 
-                            try {
-                                style.removeImage(_meMarkerIcon)
-                                style.addImage(
-                                    _meMarkerIcon,
-                                    resource,
-                                    false
-                                )
-                            } catch (e: Exception) {}
-                        }
-                    })
+
+                val request = ImageRequest.Builder(this)
+                    .data(avatarURL)
+                    .allowHardware(false) // Disable hardware bitmaps.
+                    .build()
+
+                launch {
+                    val drawable = (imageLoader.execute(request) as SuccessResult).drawable
+                    style.removeImage(_meMarkerIcon)
+                    style.addImage(
+                        _meMarkerIcon,
+                        drawable.toBitmap(260, 260)
+                    )
+                }
+
 
                 symbolManager = SymbolManager(binding.mapView, mapboxMap, style)
                 symbolManager?.iconAllowOverlap = true

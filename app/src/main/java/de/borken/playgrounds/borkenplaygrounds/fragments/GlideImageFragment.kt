@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.bumptech.glide.Glide
+import coil.load
 import de.borken.playgrounds.borkenplaygrounds.databinding.FragmentGlideImageBinding
 
 // TODO: Rename parameter arguments, choose names that match
@@ -50,9 +50,7 @@ class GlideImageFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (slideUrl !== null && activity !== null) {
-            Glide.with(requireActivity() /* context */)
-                .load(slideUrl)
-                .into(binding.slideImage)
+            binding.slideImage.load(slideUrl)
         }
     }
 

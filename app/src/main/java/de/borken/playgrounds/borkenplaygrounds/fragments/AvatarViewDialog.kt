@@ -1,8 +1,6 @@
 package de.borken.playgrounds.borkenplaygrounds.fragments
 
-import android.R
 import android.content.DialogInterface
-import android.graphics.drawable.PictureDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,11 +10,11 @@ import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
 import androidx.fragment.app.DialogFragment
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions.withCrossFade
+import coil.ImageLoader
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
 import de.borken.playgrounds.borkenplaygrounds.databinding.SampleAvatarViewBinding
 import de.borken.playgrounds.borkenplaygrounds.fetchAvatarSettings
-import de.borken.playgrounds.borkenplaygrounds.glide.GlideApp
 import de.borken.playgrounds.borkenplaygrounds.models.AvatarSetting
 import de.borken.playgrounds.borkenplaygrounds.models.AvatarSettings
 import de.borken.playgrounds.borkenplaygrounds.models.User
@@ -24,6 +22,9 @@ import de.borken.playgrounds.borkenplaygrounds.playgroundApp
 
 
 class AvatarViewDialog : DialogFragment() {
+
+    private lateinit var imageLoader: ImageLoader
+
     private var _binding: SampleAvatarViewBinding? = null
     // This property is only valid between onCreateView and
 // onDestroyView.
@@ -36,6 +37,12 @@ class AvatarViewDialog : DialogFragment() {
     ): View {
 
         _binding = SampleAvatarViewBinding.inflate(inflater, container, false)
+
+        imageLoader = ImageLoader.Builder(this.requireContext())
+            .componentRegistry {
+                add(SvgDecoder(this@AvatarViewDialog.requireContext()))
+            }
+            .build()
         return binding.root
     }
 
@@ -51,7 +58,7 @@ class AvatarViewDialog : DialogFragment() {
         avatarSettings = activity?.applicationContext?.fetchAvatarSettings
         if (activeUser?.avatarURL !== null) {
             avatarURL = activeUser?.avatarURL!!
-            avatarURL = avatarURL.replace("/png/260", "/", true);
+            avatarURL = avatarURL.replace("/png/260", "/", true)
         }
 
         var visitedPlaygrounds = activeUser?.mVisitedPlaygrounds?.size
@@ -218,9 +225,13 @@ class AvatarViewDialog : DialogFragment() {
     }
 
     private fun setAvatar() {
-        Glide.with(this /* context */)
-            .load(avatarURL)
-            .into(binding.avatarImageView)
+
+        val request = ImageRequest.Builder(this.requireContext())
+            .data(avatarURL)
+            .target(binding.avatarImageView)
+            .build()
+
+        imageLoader.enqueue(request)
     }
 
     private fun saveAvatar() {
